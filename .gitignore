@@ -1,0 +1,27 @@
+node_modules/
+dist/
+.env
+*.env.local
+
+# Drizzle generated migrations are committed — do not ignore
+# src/shared/db/migrations/ ← intentionally tracked
+
+# Logs
+*.log
+pino-debug.log
+
+# Coverage
+coverage/
+.nyc_output/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+.idea/
+*.swp
+
+plans
