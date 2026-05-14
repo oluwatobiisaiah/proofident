@@ -1,0 +1,27 @@
+ALTER TABLE "credit_scores" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "data_sources" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "betting_data" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "betting_data" ALTER COLUMN "data_source_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "mobile_money_transactions" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "mobile_money_transactions" ALTER COLUMN "data_source_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "jobs" ALTER COLUMN "employer_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "job_matches" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "job_matches" ALTER COLUMN "job_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "job_applications" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "job_applications" ALTER COLUMN "job_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "loans" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "loans" ALTER COLUMN "job_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "loans" ALTER COLUMN "job_application_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "loan_repayments" ALTER COLUMN "loan_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "income_records" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "ingestion_sessions" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "ingestion_sessions" ALTER COLUMN "data_source_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "risk_flags" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "model_feedback_events" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "model_feedback_events" ALTER COLUMN "score_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "model_feedback_events" ALTER COLUMN "loan_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "model_feedback_events" ALTER COLUMN "job_application_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "refresh_sessions" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "audit_logs" ALTER COLUMN "actor_user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "bvn_verification_sessions" ALTER COLUMN "user_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "jobs" ADD CONSTRAINT "jobs_employer_id_employers_id_fk" FOREIGN KEY ("employer_id") REFERENCES "public"."employers"("id") ON DELETE set null ON UPDATE no action;

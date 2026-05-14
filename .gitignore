@@ -24,4 +24,9 @@ Thumbs.db
 .idea/
 *.swp
 
+# ML service
+ml/.venv
+ml/**/__pycache__/
+ml/**/*.py[cod]
 plans
+.claude

@@ -15,3 +15,7 @@ export * from "./squad-webhooks.js";
 export * from "./ingestion-sessions.js";
 export * from "./risk-flags.js";
 export * from "./model-feedback-events.js";
+export * from "./refresh-sessions.js";
+export * from "./idempotency-keys.js";
+export * from "./audit-logs.js";
+export * from "./bvn-verification-sessions.js";

@@ -9,7 +9,9 @@ import {
   squadWebhooks,
   users
 } from "../db/schema/index.js";
+import { auditService } from "./audit.service.js";
 import { decisionEngineService } from "./decision-engine.service.js";
+import { nairaToKobo } from "../utils/money.js";
 
 type SquadEventPayload = {
   event_id: string;
@@ -38,109 +40,141 @@ export const webhookProcessorService = {
       throw new Error("Failed to persist webhook");
     }
 
-    if (event.type === "loan.disbursed_to_employer") {
-      const loanId = String(event.data.loanId);
-      await db.update(loans).set({
-        status: "active",
-        disbursedAt: new Date(),
-        disbursementReference: String(event.data.reference ?? event.event_id)
-      }).where(eq(loans.id, loanId));
-    }
-
-    if (event.type === "income.received_from_partner") {
-      const userId = String(event.data.userId);
-      await db.insert(incomeRecords).values({
-        userId,
-        employerName: String(event.data.employerName ?? "Partner employer"),
-        amount: Number(event.data.amount ?? 0),
-        sourceReference: String(event.data.reference ?? event.event_id),
-        sourceMetadata: event.data,
-        receivedAt: new Date(String(event.data.receivedAt ?? new Date().toISOString()))
-      });
-      await db.insert(modelFeedbackEvents).values({
-        userId,
-        eventType: "job_income_verified",
-        featureSnapshot: {},
-        observedOutcome: event.data
-      });
-      await decisionEngineService.recalculateScore(userId);
-    }
-
-    if (event.type === "repayment.debit_success") {
-      const loanId = String(event.data.loanId);
-      const installmentNumber = Number(event.data.installmentNumber);
-      const repayment = await db.query.loanRepayments.findFirst({
-        where: and(eq(loanRepayments.loanId, loanId), eq(loanRepayments.installmentNumber, installmentNumber))
-      });
-
-      if (repayment) {
-        await db.update(loanRepayments).set({
-          status: "paid",
-          paidAt: new Date(),
-          squadReference: String(event.data.reference ?? event.event_id)
-        }).where(eq(loanRepayments.id, repayment.id));
+    try {
+      if (event.type === "loan.disbursed_to_employer") {
+        const loanId = String(event.data.loanId);
+        await db.update(loans).set({
+          status: "active",
+          disbursedAt: new Date(),
+          disbursementReference: String(event.data.reference ?? event.event_id)
+        }).where(eq(loans.id, loanId));
       }
 
-      const loan = await db.query.loans.findFirst({ where: eq(loans.id, loanId) });
-      if (loan) {
+      if (event.type === "income.received_from_partner") {
+        const userId = String(event.data.userId);
+        await db.insert(incomeRecords).values({
+          userId,
+          employerName: String(event.data.employerName ?? "Partner employer"),
+          amount: Number(event.data.amount ?? 0),
+          sourceReference: String(event.data.reference ?? event.event_id),
+          sourceMetadata: event.data,
+          receivedAt: new Date(String(event.data.receivedAt ?? new Date().toISOString()))
+        });
         await db.insert(modelFeedbackEvents).values({
-          userId: loan.userId,
-          loanId: loan.id,
-          eventType: "repayment_on_time",
+          userId,
+          eventType: "job_income_verified",
           featureSnapshot: {},
           observedOutcome: event.data
         });
-        await decisionEngineService.recalculateScore(loan.userId);
-      }
-    }
-
-    if (event.type === "repayment.debit_failed") {
-      const loanId = String(event.data.loanId);
-      const installmentNumber = Number(event.data.installmentNumber);
-      const repayment = await db.query.loanRepayments.findFirst({
-        where: and(eq(loanRepayments.loanId, loanId), eq(loanRepayments.installmentNumber, installmentNumber))
-      });
-
-      if (repayment) {
-        await db.update(loanRepayments).set({
-          status: "late",
-          squadReference: String(event.data.reference ?? event.event_id)
-        }).where(eq(loanRepayments.id, repayment.id));
+        await decisionEngineService.recalculateScore(userId);
       }
 
-      const loan = await db.query.loans.findFirst({ where: eq(loans.id, loanId) });
-      if (loan) {
+      if (event.type === "repayment.debit_success") {
+        const loanId = String(event.data.loanId);
+        const installmentNumber = Number(event.data.installmentNumber);
+        const repayment = await db.query.loanRepayments.findFirst({
+          where: and(eq(loanRepayments.loanId, loanId), eq(loanRepayments.installmentNumber, installmentNumber))
+        });
+
+        if (repayment) {
+          await db.update(loanRepayments).set({
+            status: "paid",
+            paidAt: new Date(),
+            squadReference: String(event.data.reference ?? event.event_id)
+          }).where(eq(loanRepayments.id, repayment.id));
+        }
+
+        const loan = await db.query.loans.findFirst({ where: eq(loans.id, loanId) });
+        if (loan) {
+          await db.insert(modelFeedbackEvents).values({
+            userId: loan.userId,
+            loanId: loan.id,
+            eventType: "repayment_on_time",
+            featureSnapshot: {},
+            observedOutcome: event.data
+          });
+          await decisionEngineService.recalculateScore(loan.userId);
+        }
+      }
+
+      if (event.type === "repayment.debit_failed") {
+        const loanId = String(event.data.loanId);
+        const installmentNumber = Number(event.data.installmentNumber);
+        const repayment = await db.query.loanRepayments.findFirst({
+          where: and(eq(loanRepayments.loanId, loanId), eq(loanRepayments.installmentNumber, installmentNumber))
+        });
+
+        if (repayment) {
+          await db.update(loanRepayments).set({
+            status: "late",
+            squadReference: String(event.data.reference ?? event.event_id)
+          }).where(eq(loanRepayments.id, repayment.id));
+        }
+
+        const loan = await db.query.loans.findFirst({ where: eq(loans.id, loanId) });
+        if (loan) {
+          await db.insert(riskFlags).values({
+            userId: loan.userId,
+            source: "repayment",
+            flagType: "debit_failed",
+            severity: "medium",
+            status: "open",
+            summary: "Scheduled repayment failed and requires follow-up.",
+            metadata: event.data
+          });
+        }
+      }
+
+      if (event.type === "pattern_break.flagged") {
+        const userId = String(event.data.userId);
         await db.insert(riskFlags).values({
-          userId: loan.userId,
-          source: "repayment",
-          flagType: "debit_failed",
-          severity: "medium",
+          userId,
+          source: "squad",
+          flagType: "pattern_break",
+          severity: "high",
           status: "open",
-          summary: "Scheduled repayment failed and requires follow-up.",
+          summary: String(event.data.summary ?? "Observed income pattern diverged from expected behavior."),
           metadata: event.data
         });
       }
-    }
 
-    if (event.type === "pattern_break.flagged") {
-      const userId = String(event.data.userId);
-      await db.insert(riskFlags).values({
-        userId,
-        source: "squad",
-        flagType: "pattern_break",
-        severity: "high",
-        status: "open",
-        summary: String(event.data.summary ?? "Observed income pattern diverged from expected behavior."),
-        metadata: event.data
+      await db.update(squadWebhooks).set({
+        processed: true,
+        processedAt: new Date()
+      }).where(eq(squadWebhooks.id, stored.id));
+
+      await auditService.record({
+        action: "webhook.squad.processed",
+        resourceType: "squad_webhook",
+        resourceId: stored.id,
+        status: "success",
+        metadata: {
+          eventId: event.event_id,
+          eventType: event.type
+        }
       });
+
+      return { duplicated: false, processed: true };
+    } catch (error) {
+      await db.update(squadWebhooks).set({
+        processed: false,
+        error: error instanceof Error ? error.message : "Unknown webhook processing failure"
+      }).where(eq(squadWebhooks.id, stored.id));
+
+      await auditService.record({
+        action: "webhook.squad.processed",
+        resourceType: "squad_webhook",
+        resourceId: stored.id,
+        status: "failure",
+        metadata: {
+          eventId: event.event_id,
+          eventType: event.type,
+          error: error instanceof Error ? error.message : "Unknown error"
+        }
+      });
+
+      throw error;
     }
-
-    await db.update(squadWebhooks).set({
-      processed: true,
-      processedAt: new Date()
-    }).where(eq(squadWebhooks.id, stored.id));
-
-    return { duplicated: false, processed: true };
   },
 
   async replayCanonicalEvent(type: string, userId: string, loanId?: string) {
@@ -175,7 +209,7 @@ export const webhookProcessorService = {
         data: {
           ...base.data,
           employerName: user.state === "Lagos" ? "Kwik Delivery Ltd" : "Jumia Partner Promotions",
-          amount: user.state === "Lagos" ? 28000 : 22000,
+          amount: user.state === "Lagos" ? nairaToKobo(28000) : nairaToKobo(22000),
           receivedAt: new Date().toISOString(),
           reference: `INC-${Date.now()}`
         }

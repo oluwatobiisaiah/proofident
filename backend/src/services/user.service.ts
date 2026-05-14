@@ -1,7 +1,9 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "../config/database.js";
 import { creditScores, dataSources, ingestionSessions, riskFlags, users } from "../db/schema/index.js";
 import { AppError } from "../utils/app-error.js";
+import { auditService } from "./audit.service.js";
+import { squadService } from "./squad.service.js";
 import { timelineService } from "./timeline.service.js";
 
 export const userService = {
@@ -54,7 +56,7 @@ export const userService = {
     return {
       uploadId: crypto.randomUUID(),
       sourceType,
-      method: "local-dev",
+      method: "file_ingestion",
       uploadUrl: `/mock-uploads/${userId}/${sourceType}/${Date.now()}.csv`
     };
   },
@@ -70,7 +72,7 @@ export const userService = {
       acceptedCount: 0,
       rejectedCount: 0,
       validationSummary: {
-        note: "Hackathon ingestion path is accepted and ready for scoring."
+        note: "Ingestion session created and awaiting validated file parse or provider sync."
       }
     }).returning();
 
@@ -87,5 +89,67 @@ export const userService = {
     }
 
     return session;
+  },
+
+  async getIngestionForUser(userId: string, ingestionId: string) {
+    const session = await db.query.ingestionSessions.findFirst({
+      where: and(eq(ingestionSessions.id, ingestionId), eq(ingestionSessions.userId, userId))
+    });
+
+    if (!session) {
+      throw new AppError(404, "Ingestion session not found", "INGESTION_NOT_FOUND");
+    }
+
+    return session;
+  },
+
+  async provisionVirtualAccount(userId: string) {
+    const user = await this.getById(userId);
+
+    if (!user.bvnVerified) {
+      throw new AppError(400, "BVN verification is required before creating a settlement account", "VIRTUAL_ACCOUNT_KYC_REQUIRED");
+    }
+
+    if (user.squadVirtualAccount) {
+      return {
+        accountNumber: user.squadVirtualAccount,
+        customerIdentifier: user.squadCustomerId
+      };
+    }
+
+    const nameParts = (user.name ?? "").trim().split(/\s+/).filter(Boolean);
+
+    if (nameParts.length < 2) {
+      throw new AppError(400, "User full name is required before creating a virtual account", "VIRTUAL_ACCOUNT_NAME_REQUIRED");
+    }
+
+    const virtualAccount = await squadService.createVirtualAccount({
+      customerIdentifier: `proofident-${user.id}`,
+      firstName: nameParts[0] ?? "Customer",
+      lastName: nameParts.slice(1).join(" "),
+      phoneNumber: user.phone
+    });
+
+    const [updated] = await db.update(users).set({
+      squadVirtualAccount: virtualAccount.accountNumber,
+      squadCustomerId: virtualAccount.customerIdentifier
+    }).where(eq(users.id, userId)).returning();
+
+    if (!updated) {
+      throw new AppError(500, "Failed to save virtual account", "VIRTUAL_ACCOUNT_SAVE_FAILED");
+    }
+
+    await auditService.record({
+      actorUserId: userId,
+      action: "wallet.virtual_account.created",
+      resourceType: "user",
+      resourceId: userId,
+      status: "success",
+      metadata: {
+        accountNumber: virtualAccount.accountNumber
+      }
+    });
+
+    return virtualAccount;
   }
 };

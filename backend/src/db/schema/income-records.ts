@@ -1,12 +1,12 @@
 import { pgTable, index } from "drizzle-orm/pg-core";
-import { createdAtColumn, idColumn, integer, jsonb, timestamp, varchar } from "./shared.js";
+import { createdAtColumn, idColumn, integer, jsonb, timestamp, uuid, varchar } from "./shared.js";
 import { users } from "./users.js";
 
 export const incomeRecords = pgTable(
   "income_records",
   {
     id: idColumn,
-    userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     employerName: varchar("employer_name", { length: 255 }),
     amount: integer("amount").notNull(),
     sourceReference: varchar("source_reference", { length: 100 }),

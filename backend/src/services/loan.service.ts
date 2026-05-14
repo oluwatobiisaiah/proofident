@@ -2,6 +2,8 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "../config/database.js";
 import {
   creditScores,
+  employers,
+  incomeRecords,
   jobApplications,
   jobMatches,
   jobs,
@@ -10,6 +12,8 @@ import {
   users
 } from "../db/schema/index.js";
 import { AppError } from "../utils/app-error.js";
+import { auditService } from "./audit.service.js";
+import { squadService } from "./squad.service.js";
 
 function repaymentFor(amount: number, termMonths: number, interestRateBps: number) {
   const total = amount * (1 + interestRateBps / 10_000 * termMonths);
@@ -80,6 +84,13 @@ export const loanService = {
     }).filter(Boolean);
   },
 
+  async getIncomeRecords(userId: string) {
+    return db.query.incomeRecords.findMany({
+      where: eq(incomeRecords.userId, userId),
+      orderBy: [desc(incomeRecords.receivedAt)]
+    });
+  },
+
   async applyForLoan(userId: string, jobId: string, requestedAmount?: number) {
     const [score, job, application] = await Promise.all([
       db.query.creditScores.findFirst({ where: eq(creditScores.userId, userId), orderBy: [desc(creditScores.generatedAt)] }),
@@ -93,6 +104,10 @@ export const loanService = {
     if (!score || !job) {
       throw new AppError(400, "Missing score or job context", "LOAN_CONTEXT_MISSING");
     }
+
+    const employer = job.employerId
+      ? await db.query.employers.findFirst({ where: eq(employers.id, job.employerId) })
+      : null;
 
     if (!application || application.status !== "accepted") {
       throw new AppError(400, "Accepted job path is required before loan approval", "JOB_ACCEPTANCE_REQUIRED");
@@ -147,6 +162,38 @@ export const loanService = {
         status: "pending"
       }))
     );
+
+    if (!employer?.squadAccountNumber) {
+      throw new AppError(400, "Employer settlement details are missing", "EMPLOYER_SETTLEMENT_MISSING");
+    }
+
+    const disbursement = await squadService.disburseToBankAccount({
+      amount: approvedAmount,
+      accountNumber: employer.squadAccountNumber,
+      bankCode: employer.bankCode,
+      accountName: employer.accountName ?? employer.name,
+      reference: `loan-${loan.id}`,
+      narration: `${job.title} starter loan`
+    });
+
+    await db.update(loans).set({
+      status: disbursement.status === "success" ? "disbursed" : "approved",
+      disbursementReference: disbursement.reference,
+      ...(disbursement.status === "success" ? { disbursedAt: new Date() } : {})
+    }).where(eq(loans.id, loan.id));
+
+    await auditService.record({
+      actorUserId: userId,
+      action: "loan.disbursed",
+      resourceType: "loan",
+      resourceId: loan.id,
+      status: disbursement.status === "success" ? "success" : "pending",
+      metadata: {
+        employerId: employer.id,
+        reference: disbursement.reference,
+        amount: approvedAmount
+      }
+    });
 
     return this.getLoan(loan.id);
   }

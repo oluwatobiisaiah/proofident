@@ -1,12 +1,12 @@
 import { pgTable, index } from "drizzle-orm/pg-core";
-import { confidenceLevelEnum, createdAtColumn, decimal, idColumn, integer, jsonb, scoreRangeEnum, timestamp, varchar } from "./shared.js";
+import { confidenceLevelEnum, createdAtColumn, decimal, idColumn, integer, jsonb, scoreRangeEnum, timestamp, uuid, varchar } from "./shared.js";
 import { users } from "./users.js";
 
 export const creditScores = pgTable(
   "credit_scores",
   {
     id: idColumn,
-    userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     score: integer("score").notNull(),
     scoreRange: scoreRangeEnum("score_range").notNull(),
     confidence: decimal("confidence", { precision: 3, scale: 2 }).notNull(),

@@ -1,11 +1,12 @@
 import { pgTable, index } from "drizzle-orm/pg-core";
-import { createdAtColumn, idColumn, integer, jsonb, updatedAtColumn, varchar } from "./shared.js";
+import { createdAtColumn, idColumn, integer, jsonb, updatedAtColumn, uuid, varchar } from "./shared.js";
+import { employers } from "./employers.js";
 
 export const jobs = pgTable(
   "jobs",
   {
     id: idColumn,
-    employerId: varchar("employer_id", { length: 36 }),
+    employerId: uuid("employer_id").references(() => employers.id, { onDelete: "set null" }),
     title: varchar("title", { length: 255 }).notNull(),
     employer: varchar("employer", { length: 255 }).notNull(),
     category: varchar("category", { length: 100 }).notNull(),
