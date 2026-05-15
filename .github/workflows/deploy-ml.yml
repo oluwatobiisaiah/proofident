@@ -13,7 +13,7 @@ permissions:
   packages: write
 
 env:
-  IMAGE: ghcr.io/idylabsllc/proofident-ml
+  IMAGE: ghcr.io/oluwatobiisaiah/proofident-ml
 
 jobs:
   build-and-push:

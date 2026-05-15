@@ -13,7 +13,7 @@ permissions:
   packages: write
 
 env:
-  IMAGE: ghcr.io/idylabsllc/proofident-backend
+  IMAGE: ghcr.io/oluwatobiisaiah/proofident-backend
 
 jobs:
   typecheck:

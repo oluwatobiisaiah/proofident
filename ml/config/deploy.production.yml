@@ -1,5 +1,5 @@
 service: proofident-ml
-image: idylabsllc/proofident-ml
+image: oluwatobiisaiah/proofident-ml
 primary_role: api
 
 registry:

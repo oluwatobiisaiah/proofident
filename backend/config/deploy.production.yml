@@ -1,5 +1,5 @@
 service: proofident-backend
-image: idylabsllc/proofident-backend
+image: oluwatobiisaiah/proofident-backend
 primary_role: api
 
 registry:
