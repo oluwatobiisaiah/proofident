@@ -41,6 +41,7 @@ jobs:
           tags: |
             type=sha,format=long
             type=ref,event=branch
+            type=raw,value=${{ github.sha }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -82,7 +83,7 @@ jobs:
           KAMAL_REGISTRY_PASSWORD: ${{ secrets.KAMAL_REGISTRY_PASSWORD }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
           REDIS_URL: ${{ secrets.REDIS_URL }}
-        run: kamal deploy --config-file config/deploy.production.yml
+        run: kamal deploy --skip-push --config-file config/deploy.production.yml
 
       - name: Health check
         run: |

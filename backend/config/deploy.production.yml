@@ -23,7 +23,6 @@ servers:
         path: /health
         interval: 10
         timeout: 5
-        max_attempts: 15
 
   worker:
     hosts:

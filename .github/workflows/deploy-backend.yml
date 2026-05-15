@@ -67,6 +67,7 @@ jobs:
           tags: |
             type=sha,format=long
             type=ref,event=branch
+            type=raw,value=${{ github.sha }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -119,7 +120,7 @@ jobs:
           MONO_REDIRECT_URL: ${{ secrets.MONO_REDIRECT_URL }}
           SQUAD_SECRET_KEY: ${{ secrets.SQUAD_SECRET_KEY }}
           SQUAD_MERCHANT_ID: ${{ secrets.SQUAD_MERCHANT_ID }}
-        run: kamal deploy --config-file config/deploy.production.yml
+        run: kamal deploy --skip-push --config-file config/deploy.production.yml
 
       - name: Run database migrations
         env:
