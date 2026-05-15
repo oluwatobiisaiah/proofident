@@ -21,9 +21,8 @@ servers:
       app_port: 8001
       healthcheck:
         path: /health
-        interval: "15s"
-        timeout: "10s"
-        # Models load from disk in ~10s; give 3 minutes headroom
+        interval: 15
+        timeout: 10
         max_attempts: 12
 
   worker:
@@ -50,14 +49,11 @@ env:
   secret:
     - REDIS_URL
 
-deploy:
-  ssh:
-    user: deploy
-  timeout: 600
-  retain_containers: 1
+deploy_timeout: 600
+retain_containers: 1
+
+ssh:
+  user: deploy
 
 builder:
   arch: amd64
-  cache:
-    type: gha
-    options: mode=max

@@ -21,8 +21,8 @@ servers:
       app_port: 3000
       healthcheck:
         path: /health
-        interval: "10s"
-        timeout: "5s"
+        interval: 10
+        timeout: 5
         max_attempts: 15
 
   worker:
@@ -69,14 +69,11 @@ env:
     - SQUAD_SECRET_KEY
     - SQUAD_MERCHANT_ID
 
-deploy:
-  ssh:
-    user: deploy
-  timeout: 300
-  retain_containers: 1
+deploy_timeout: 300
+retain_containers: 1
+
+ssh:
+  user: deploy
 
 builder:
   arch: amd64
-  cache:
-    type: gha
-    options: mode=max
