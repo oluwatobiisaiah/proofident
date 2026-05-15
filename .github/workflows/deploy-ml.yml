@@ -77,12 +77,18 @@ jobs:
       - name: Add server to known hosts
         run: ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
 
+      - name: Write Kamal secrets
+        run: |
+          mkdir -p .kamal
+          cat > .kamal/secrets <<'EOF'
+          KAMAL_REGISTRY_PASSWORD=${{ secrets.KAMAL_REGISTRY_PASSWORD }}
+          REDIS_URL=${{ secrets.REDIS_URL }}
+          EOF
+
       - name: Deploy
         env:
           GITHUB_ACTOR: ${{ github.actor }}
-          KAMAL_REGISTRY_PASSWORD: ${{ secrets.KAMAL_REGISTRY_PASSWORD }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
         run: kamal deploy --skip-push --config-file config/deploy.production.yml
 
       - name: Health check
