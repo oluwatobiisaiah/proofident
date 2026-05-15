@@ -577,6 +577,61 @@ export const bettingIngestionService = {
     };
   },
 
+  async retryExtraction(params: {
+    userId: string;
+    ingestionSessionId: string;
+  }) {
+    const session = await ensureOwnedSession(params.userId, params.ingestionSessionId);
+
+    if (!["validating", "failed", "uploaded"].includes(session.status)) {
+      throw new AppError(400, `Session is in '${session.status}' state — only validating, failed, or uploaded sessions can be retried`, "BETTING_RETRY_NOT_ALLOWED");
+    }
+
+    const source = await ensureOwnedSource(params.userId, session.dataSourceId ?? "");
+    assertSupportedBettingProvider(source.providerCode ?? "");
+
+    const uploads = await db.query.bettingUploadFiles.findMany({
+      where: eq(bettingUploadFiles.ingestionSessionId, session.id)
+    });
+
+    if (uploads.length === 0) {
+      throw new AppError(400, "No uploaded files found for this session", "BETTING_RETRY_NO_FILES");
+    }
+
+    const uploadKind = (uploads[0]!.kind ?? "screenshot") as UploadKind;
+    const providerCode = source.providerCode as SupportedBettingProvider;
+
+    const [newJob] = await db.insert(bettingExtractionJobs).values({
+      userId: params.userId,
+      dataSourceId: source.id,
+      ingestionSessionId: session.id,
+      status: "queued",
+      parserCode: parserCodeFor(providerCode, uploadKind),
+      sourceSummary: { fileCount: uploads.length, uploadKind, retried: true }
+    }).returning();
+
+    if (!newJob) {
+      throw new AppError(500, "Failed to create retry extraction job", "BETTING_EXTRACTION_JOB_CREATE_FAILED");
+    }
+
+    await bettingExtractionService.dispatchExtractionJob(newJob.id);
+
+    await auditService.record({
+      actorUserId: params.userId,
+      action: "betting.upload_session.retried",
+      resourceType: "ingestion_session",
+      resourceId: session.id,
+      status: "success",
+      metadata: { newExtractionJobId: newJob.id, providerCode, uploadKind }
+    });
+
+    return {
+      ingestionSessionId: session.id,
+      extractionJobId: newJob.id,
+      queued: true as const
+    };
+  },
+
   async finalizeConfirmedRecords(params: {
     userId: string;
     ingestionSessionId: string;

@@ -6,7 +6,7 @@ import { webhookProcessorService } from "../services/webhook-processor.service.j
 
 export const webhookRoutes: FastifyPluginAsync = async (app) => {
   app.post("/webhooks/squad", async (request, reply) => {
-    const signature = request.headers["x-squad-signature"];
+    const signature = request.headers["x-squad-encrypted-body"];
     const rawPayload = request.rawBody ?? JSON.stringify(request.body ?? {});
 
     if (!squadService.verifyWebhookSignature(

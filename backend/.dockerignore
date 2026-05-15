@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.github
+coverage
+docker
+
+# Local env files — never bake secrets into the image
+.env
+.env.*
+!.env.example
+
+# Dev tooling
+*.log
+.DS_Store

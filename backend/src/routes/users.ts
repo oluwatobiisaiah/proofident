@@ -51,64 +51,6 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
     });
   });
 
-  app.post("/me/data-sources/betting/upload-sessions", authOnly, async (request, reply) => {
-    const body = z.object({
-      providerCode: bettingExtractionProviderSchema,
-      uploadKind: z.enum(["screenshot", "csv"]),
-      files: z.array(z.object({
-        originalFilename: z.string().min(1),
-        mimeType: z.string().min(1),
-        fileSizeBytes: z.number().int().positive(),
-        checksumSha256: z.string().length(64).optional(),
-        uploadOrder: z.number().int().nonnegative()
-      })).min(1)
-    }).parse(request.body);
-
-    const session = await bettingIngestionService.createUploadSession({
-      userId: request.auth!.userId,
-      providerCode: body.providerCode,
-      uploadKind: body.uploadKind,
-      files: body.files.map((file) => ({
-        originalFilename: file.originalFilename,
-        mimeType: file.mimeType,
-        fileSizeBytes: file.fileSizeBytes,
-        uploadOrder: file.uploadOrder,
-        ...(file.checksumSha256 ? { checksumSha256: file.checksumSha256 } : {})
-      }))
-    });
-
-    return reply.send({ success: true, ...session });
-  });
-
-  app.post("/me/data-sources/betting/upload-sessions/:ingestionSessionId/complete", authOnly, async (request, reply) => {
-    const params = z.object({
-      ingestionSessionId: z.uuid()
-    }).parse(request.params);
-    const body = z.object({
-      files: z.array(z.object({
-        uploadFileId: z.uuid(),
-        publicUrl: z.url(),
-        storageObjectKey: z.string().min(1),
-        mimeType: z.string().optional(),
-        fileSizeBytes: z.number().int().positive().optional()
-      })).min(1)
-    }).parse(request.body);
-
-    const result = await bettingIngestionService.completeUploadSession({
-      userId: request.auth!.userId,
-      ingestionSessionId: params.ingestionSessionId,
-      files: body.files.map((file) => ({
-        uploadFileId: file.uploadFileId,
-        publicUrl: file.publicUrl,
-        storageObjectKey: file.storageObjectKey,
-        ...(file.mimeType ? { mimeType: file.mimeType } : {}),
-        ...(file.fileSizeBytes ? { fileSizeBytes: file.fileSizeBytes } : {})
-      }))
-    });
-
-    return reply.send({ success: true, ...result });
-  });
-
   app.get("/me/data-sources/betting/ingestions/:ingestionSessionId/review", authOnly, async (request, reply) => {
     const params = z.object({
       ingestionSessionId: z.uuid()
@@ -166,6 +108,19 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
       userId: request.auth!.userId,
       ingestionSessionId: params.ingestionSessionId,
       ...(body.stagedRecordIds ? { stagedRecordIds: body.stagedRecordIds } : {})
+    });
+
+    return reply.send({ success: true, ...result });
+  });
+
+  app.post("/me/data-sources/betting/ingestions/:ingestionSessionId/retry-extraction", authOnly, async (request, reply) => {
+    const params = z.object({
+      ingestionSessionId: z.uuid()
+    }).parse(request.params);
+
+    const result = await bettingIngestionService.retryExtraction({
+      userId: request.auth!.userId,
+      ingestionSessionId: params.ingestionSessionId
     });
 
     return reply.send({ success: true, ...result });

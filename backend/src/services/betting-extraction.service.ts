@@ -355,7 +355,7 @@ export const bettingExtractionService = {
         transactionDate: row.transaction_date ? new Date(row.transaction_date) : null,
         settledAt: row.settled_at ? new Date(row.settled_at) : null,
         betAmount: row.bet_amount ?? null,
-        odds: row.odds !== undefined ? row.odds.toFixed(2) : null,
+        odds: row.odds != null ? row.odds.toFixed(2) : null,
         outcome: row.outcome ?? null,
         payoutAmount: row.payout_amount ?? null,
         betType: row.bet_type ?? null,

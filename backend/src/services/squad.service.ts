@@ -8,11 +8,12 @@ export const squadService = {
       return env.NODE_ENV !== "production";
     }
 
-    const expected = createHmac("sha256", env.SQUAD_WEBHOOK_SECRET)
+    const expected = createHmac("sha512", env.SQUAD_SECRET_KEY)
       .update(payload)
-      .digest("hex");
+      .digest("hex")
+      .toUpperCase();
 
-    const provided = Buffer.from(signature);
+    const provided = Buffer.from(signature.toUpperCase());
     const calculated = Buffer.from(expected);
 
     return provided.length === calculated.length && timingSafeEqual(provided, calculated);
