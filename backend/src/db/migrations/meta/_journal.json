@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1778739075899,
-      "tag": "0000_panoramic_captain_universe",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1778740671326,
-      "tag": "0001_nostalgic_inhumans",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1778741222620,
-      "tag": "0002_amusing_slipstream",
+      "when": 1778785845478,
+      "tag": "0000_careless_tag",
       "breakpoints": true
     }
   ]

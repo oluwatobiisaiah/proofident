@@ -1,10 +1,7 @@
 type BettingProviderCapability = {
-  providerCode: "sportybet" | "bet9ja" | "nairabet";
+  providerCode: "sportybet" | "bet9ja" | "1xbet";
   displayName: string;
-  publicApiAvailable: boolean;
-  accountHistoryVisibleInProduct: boolean;
-  supportedImportFormats: Array<"csv" | "json">;
-  browserAssistedCollection: boolean;
+  supportedImportFormats: Array<"screenshot" | "csv">;
   notes: string;
 };
 
@@ -12,29 +9,20 @@ const capabilities: BettingProviderCapability[] = [
   {
     providerCode: "sportybet",
     displayName: "SportyBet",
-    publicApiAvailable: false,
-    accountHistoryVisibleInProduct: true,
-    supportedImportFormats: ["csv", "json"],
-    browserAssistedCollection: true,
-    notes: "No public developer API verified; best current path is provider export/import or user-consented browser collection."
+    supportedImportFormats: ["screenshot"],
+    notes: "No native export. Upload screenshots of your bet history."
   },
   {
     providerCode: "bet9ja",
     displayName: "Bet9ja",
-    publicApiAvailable: false,
-    accountHistoryVisibleInProduct: true,
-    supportedImportFormats: ["csv", "json"],
-    browserAssistedCollection: true,
-    notes: "Official help confirms My Bets and Transaction History visibility, but no public developer API was verified."
+    supportedImportFormats: ["screenshot"],
+    notes: "No native export. Upload screenshots of your bet history."
   },
   {
-    providerCode: "nairabet",
-    displayName: "Nairabet",
-    publicApiAvailable: false,
-    accountHistoryVisibleInProduct: true,
-    supportedImportFormats: ["csv", "json"],
-    browserAssistedCollection: true,
-    notes: "Official product pages show Open Bets access, but no public developer API was verified."
+    providerCode: "1xbet",
+    displayName: "1xBet",
+    supportedImportFormats: ["csv", "screenshot"],
+    notes: "Download your history as CSV from 1xBet account settings, or upload screenshots as fallback."
   }
 ];
 

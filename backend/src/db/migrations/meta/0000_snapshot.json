@@ -1,5 +1,5 @@
 {
-  "id": "902e4055-d704-4344-8255-b07b28abefb9",
+  "id": "20998151-8556-4531-b0dc-d6de167c5856",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -310,7 +310,7 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -508,7 +508,7 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -524,6 +524,14 @@
           "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true
+        },
+        "provider_code": {
+          "name": "provider_code",
+          "type": "provider_code",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'other'"
         },
         "connection_method": {
           "name": "connection_method",
@@ -544,6 +552,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "provider_account_ref": {
+          "name": "provider_account_ref",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "consent_reference": {
+          "name": "consent_reference",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "token_expires_at": {
           "name": "token_expires_at",
           "type": "timestamp with time zone",
@@ -561,6 +581,13 @@
           "type": "varchar(64)",
           "primaryKey": false,
           "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
         },
         "connected_at": {
           "name": "connected_at",
@@ -663,21 +690,39 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "data_source_id": {
           "name": "data_source_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "external_bet_id": {
+          "name": "external_bet_id",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_reference": {
+          "name": "provider_reference",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
         },
         "transaction_date": {
           "name": "transaction_date",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
+        },
+        "settled_at": {
+          "name": "settled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         },
         "bet_amount": {
           "name": "bet_amount",
@@ -712,6 +757,12 @@
         "league": {
           "name": "league",
           "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "raw_payload": {
+          "name": "raw_payload",
+          "type": "varchar(4000)",
           "primaryKey": false,
           "notNull": false
         },
@@ -795,6 +846,882 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.betting_upload_files": {
+      "name": "betting_upload_files",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_source_id": {
+          "name": "data_source_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ingestion_session_id": {
+          "name": "ingestion_session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "betting_upload_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_provider": {
+          "name": "storage_provider",
+          "type": "upload_storage_provider",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'cloudinary'"
+        },
+        "lifecycle_status": {
+          "name": "lifecycle_status",
+          "type": "upload_lifecycle_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'initiated'"
+        },
+        "original_filename": {
+          "name": "original_filename",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_path": {
+          "name": "storage_path",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "public_url": {
+          "name": "public_url",
+          "type": "varchar(2048)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_object_key": {
+          "name": "storage_object_key",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "checksum_sha256": {
+          "name": "checksum_sha256",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "file_size_bytes": {
+          "name": "file_size_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "upload_order": {
+          "name": "upload_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "betting_upload_files_session_order_idx": {
+          "name": "betting_upload_files_session_order_idx",
+          "columns": [
+            {
+              "expression": "ingestion_session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "upload_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "betting_upload_files_session_kind_idx": {
+          "name": "betting_upload_files_session_kind_idx",
+          "columns": [
+            {
+              "expression": "ingestion_session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "betting_upload_files_storage_object_idx": {
+          "name": "betting_upload_files_storage_object_idx",
+          "columns": [
+            {
+              "expression": "storage_object_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "betting_upload_files_user_id_users_id_fk": {
+          "name": "betting_upload_files_user_id_users_id_fk",
+          "tableFrom": "betting_upload_files",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "betting_upload_files_data_source_id_data_sources_id_fk": {
+          "name": "betting_upload_files_data_source_id_data_sources_id_fk",
+          "tableFrom": "betting_upload_files",
+          "tableTo": "data_sources",
+          "columnsFrom": [
+            "data_source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "betting_upload_files_ingestion_session_id_ingestion_sessions_id_fk": {
+          "name": "betting_upload_files_ingestion_session_id_ingestion_sessions_id_fk",
+          "tableFrom": "betting_upload_files",
+          "tableTo": "ingestion_sessions",
+          "columnsFrom": [
+            "ingestion_session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.betting_extraction_jobs": {
+      "name": "betting_extraction_jobs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_source_id": {
+          "name": "data_source_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ingestion_session_id": {
+          "name": "ingestion_session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "extraction_job_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'queued'"
+        },
+        "parser_code": {
+          "name": "parser_code",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ocr_provider": {
+          "name": "ocr_provider",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_summary": {
+          "name": "source_summary",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "average_confidence": {
+          "name": "average_confidence",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extracted_record_count": {
+          "name": "extracted_record_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "accepted_record_count": {
+          "name": "accepted_record_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "rejected_record_count": {
+          "name": "rejected_record_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "review_required_count": {
+          "name": "review_required_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processing_started_at": {
+          "name": "processing_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processing_completed_at": {
+          "name": "processing_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "betting_extraction_jobs_session_status_idx": {
+          "name": "betting_extraction_jobs_session_status_idx",
+          "columns": [
+            {
+              "expression": "ingestion_session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "betting_extraction_jobs_user_created_idx": {
+          "name": "betting_extraction_jobs_user_created_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "betting_extraction_jobs_user_id_users_id_fk": {
+          "name": "betting_extraction_jobs_user_id_users_id_fk",
+          "tableFrom": "betting_extraction_jobs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "betting_extraction_jobs_data_source_id_data_sources_id_fk": {
+          "name": "betting_extraction_jobs_data_source_id_data_sources_id_fk",
+          "tableFrom": "betting_extraction_jobs",
+          "tableTo": "data_sources",
+          "columnsFrom": [
+            "data_source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "betting_extraction_jobs_ingestion_session_id_ingestion_sessions_id_fk": {
+          "name": "betting_extraction_jobs_ingestion_session_id_ingestion_sessions_id_fk",
+          "tableFrom": "betting_extraction_jobs",
+          "tableTo": "ingestion_sessions",
+          "columnsFrom": [
+            "ingestion_session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.betting_staged_records": {
+      "name": "betting_staged_records",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_source_id": {
+          "name": "data_source_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ingestion_session_id": {
+          "name": "ingestion_session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "upload_file_id": {
+          "name": "upload_file_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extraction_job_id": {
+          "name": "extraction_job_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "staged_record_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending_review'"
+        },
+        "row_fingerprint": {
+          "name": "row_fingerprint",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "external_bet_id": {
+          "name": "external_bet_id",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_reference": {
+          "name": "provider_reference",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transaction_date": {
+          "name": "transaction_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "settled_at": {
+          "name": "settled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bet_amount": {
+          "name": "bet_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "odds": {
+          "name": "odds",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payout_amount": {
+          "name": "payout_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bet_type": {
+          "name": "bet_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "league": {
+          "name": "league",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "event_name": {
+          "name": "event_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extraction_confidence": {
+          "name": "extraction_confidence",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parser_code": {
+          "name": "parser_code",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "validation_issues": {
+          "name": "validation_issues",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "raw_extraction_payload": {
+          "name": "raw_extraction_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "normalized_payload": {
+          "name": "normalized_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "reviewer_notes": {
+          "name": "reviewer_notes",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "imported_at": {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "betting_staged_records_session_status_idx": {
+          "name": "betting_staged_records_session_status_idx",
+          "columns": [
+            {
+              "expression": "ingestion_session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "betting_staged_records_job_idx": {
+          "name": "betting_staged_records_job_idx",
+          "columns": [
+            {
+              "expression": "extraction_job_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "betting_staged_records_user_date_idx": {
+          "name": "betting_staged_records_user_date_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "transaction_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "betting_staged_records_session_fingerprint_idx": {
+          "name": "betting_staged_records_session_fingerprint_idx",
+          "columns": [
+            {
+              "expression": "ingestion_session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "row_fingerprint",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "betting_staged_records_user_id_users_id_fk": {
+          "name": "betting_staged_records_user_id_users_id_fk",
+          "tableFrom": "betting_staged_records",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "betting_staged_records_data_source_id_data_sources_id_fk": {
+          "name": "betting_staged_records_data_source_id_data_sources_id_fk",
+          "tableFrom": "betting_staged_records",
+          "tableTo": "data_sources",
+          "columnsFrom": [
+            "data_source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "betting_staged_records_ingestion_session_id_ingestion_sessions_id_fk": {
+          "name": "betting_staged_records_ingestion_session_id_ingestion_sessions_id_fk",
+          "tableFrom": "betting_staged_records",
+          "tableTo": "ingestion_sessions",
+          "columnsFrom": [
+            "ingestion_session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "betting_staged_records_upload_file_id_betting_upload_files_id_fk": {
+          "name": "betting_staged_records_upload_file_id_betting_upload_files_id_fk",
+          "tableFrom": "betting_staged_records",
+          "tableTo": "betting_upload_files",
+          "columnsFrom": [
+            "upload_file_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "betting_staged_records_extraction_job_id_betting_extraction_jobs_id_fk": {
+          "name": "betting_staged_records_extraction_job_id_betting_extraction_jobs_id_fk",
+          "tableFrom": "betting_staged_records",
+          "tableTo": "betting_extraction_jobs",
+          "columnsFrom": [
+            "extraction_job_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.betting_record_reviews": {
+      "name": "betting_record_reviews",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "staged_record_id": {
+          "name": "staged_record_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "review_action",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "previous_status": {
+          "name": "previous_status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "next_status": {
+          "name": "next_status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "patch": {
+          "name": "patch",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "betting_record_reviews_staged_record_created_idx": {
+          "name": "betting_record_reviews_staged_record_created_idx",
+          "columns": [
+            {
+              "expression": "staged_record_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "betting_record_reviews_staged_record_id_betting_staged_records_id_fk": {
+          "name": "betting_record_reviews_staged_record_id_betting_staged_records_id_fk",
+          "tableFrom": "betting_record_reviews",
+          "tableTo": "betting_staged_records",
+          "columnsFrom": [
+            "staged_record_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "betting_record_reviews_actor_user_id_users_id_fk": {
+          "name": "betting_record_reviews_actor_user_id_users_id_fk",
+          "tableFrom": "betting_record_reviews",
+          "tableTo": "users",
+          "columnsFrom": [
+            "actor_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.mobile_money_transactions": {
       "name": "mobile_money_transactions",
       "schema": "",
@@ -808,15 +1735,27 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "data_source_id": {
           "name": "data_source_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "external_transaction_id": {
+          "name": "external_transaction_id",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_reference": {
+          "name": "provider_reference",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
         },
         "transaction_date": {
           "name": "transaction_date",
@@ -830,6 +1769,14 @@
           "primaryKey": false,
           "notNull": true
         },
+        "transaction_status": {
+          "name": "transaction_status",
+          "type": "transaction_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'successful'"
+        },
         "amount": {
           "name": "amount",
           "type": "integer",
@@ -842,8 +1789,33 @@
           "primaryKey": false,
           "notNull": false
         },
+        "currency": {
+          "name": "currency",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NGN'"
+        },
+        "channel": {
+          "name": "channel",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "recipient": {
           "name": "recipient",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "counterparty_name": {
+          "name": "counterparty_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "counterparty_account_ref": {
+          "name": "counterparty_account_ref",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
@@ -859,6 +1831,13 @@
           "type": "varchar(500)",
           "primaryKey": false,
           "notNull": false
+        },
+        "raw_payload": {
+          "name": "raw_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
         },
         "created_at": {
           "name": "created_at",
@@ -953,7 +1932,7 @@
         },
         "employer_id": {
           "name": "employer_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -1075,7 +2054,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "jobs_employer_id_employers_id_fk": {
+          "name": "jobs_employer_id_employers_id_fk",
+          "tableFrom": "jobs",
+          "tableTo": "employers",
+          "columnsFrom": [
+            "employer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1095,13 +2088,13 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "job_id": {
           "name": "job_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -1203,13 +2196,13 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "job_id": {
           "name": "job_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -1412,19 +2405,19 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "job_id": {
           "name": "job_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "job_application_id": {
           "name": "job_application_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -1595,7 +2588,7 @@
         },
         "loan_id": {
           "name": "loan_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -1702,7 +2695,7 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -1912,13 +2905,13 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "data_source_id": {
           "name": "data_source_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -2066,7 +3059,7 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -2181,25 +3174,25 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "score_id": {
           "name": "score_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "loan_id": {
           "name": "loan_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "job_application_id": {
           "name": "job_application_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -2327,7 +3320,7 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -2565,7 +3558,7 @@
         },
         "actor_user_id": {
           "name": "actor_user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -2692,7 +3685,7 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },

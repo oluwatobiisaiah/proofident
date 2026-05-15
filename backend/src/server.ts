@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
 import Fastify from "fastify";
@@ -13,7 +14,25 @@ import { AppError } from "./utils/app-error.js";
 import { db } from "./config/database.js";
 import { logger } from "./utils/logger.js";
 import { hashRequest } from "./utils/security.js";
+import { startInlineQueueWorkers } from "./workers/inline-queue-workers.js";
 import { ZodError } from "zod";
+
+function resolveIdempotencyScope(request: { headers: { authorization?: string | undefined }; ip: string }): string {
+  const auth = request.headers.authorization;
+  if (auth?.startsWith("Bearer ")) {
+    const parts = auth.substring(7).split(".");
+    if (parts.length === 3 && parts[1]) {
+      try {
+        const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString()) as Record<string, unknown>;
+        if (typeof payload.sub === "string") return payload.sub;
+      } catch {}
+    }
+    return auth;
+  }
+  // Unauthenticated: use IP. With trustProxy:true, Fastify reads X-Forwarded-For
+  // in production so this is the real client IP, not the server's.
+  return request.ip;
+}
 
 export async function buildServer() {
   const app = Fastify({
@@ -36,7 +55,15 @@ export async function buildServer() {
     }
   });
 
+  // Accept raw CSV uploads (used by the provider betting import endpoint)
+  app.addContentTypeParser(["text/csv", "text/plain"], { parseAs: "string" }, (_request, body, done) => {
+    done(null, typeof body === "string" ? body : body.toString("utf8"));
+  });
+
   await app.register(sensible);
+  await app.register(multipart, {
+    limits: { fileSize: 20 * 1024 * 1024, files: 10 }  // 20 MB per file, max 10 files
+  });
   await app.register(cors, {
     origin: env.ALLOWED_ORIGINS.split(",")
   });
@@ -57,11 +84,17 @@ export async function buildServer() {
 
     const key = request.headers["idempotency-key"];
 
-    if (typeof key !== "string" || !key.trim() || request.url.startsWith("/webhooks/")) {
+    // Auth routes are time-sensitive (OTP expiry, token issuance) — never cache them
+    if (
+      typeof key !== "string" ||
+      !key.trim() ||
+      request.url.startsWith("/webhooks/") ||
+      request.url.startsWith("/auth/")
+    ) {
       return;
     }
 
-    const scope = request.headers.authorization ?? request.ip;
+    const scope = resolveIdempotencyScope(request);
     const requestHash = hashRequest(request.method, request.url, request.body);
     const existing = await db.query.idempotencyKeys.findFirst({
       where: and(
@@ -71,21 +104,38 @@ export async function buildServer() {
     });
 
     if (existing) {
-      if (existing.requestHash !== requestHash) {
-        throw new AppError(409, "Idempotency key was reused with a different request body", "IDEMPOTENCY_MISMATCH");
+      if (existing.requestHash === requestHash) {
+        if (existing.completedAt) {
+          request.idempotency = {
+            key,
+            recordId: existing.id,
+            requestHash,
+            replayed: true
+          };
+          return reply.status(Number(existing.responseStatus ?? 200)).send(existing.responseBody ?? {});
+        }
+        throw new AppError(409, "A matching request is already being processed", "IDEMPOTENCY_IN_PROGRESS");
       }
 
-      if (existing.completedAt) {
-        request.idempotency = {
-          key,
-          recordId: existing.id,
-          requestHash,
-          replayed: true
-        };
-        return reply.status(Number(existing.responseStatus ?? 200)).send(existing.responseBody ?? {});
+      // Different body, same key
+      if (!existing.completedAt) {
+        // A different request with this key is still in-flight — block
+        throw new AppError(409, "A request with this idempotency key is currently being processed", "IDEMPOTENCY_IN_PROGRESS");
       }
 
-      throw new AppError(409, "A matching request is already being processed", "IDEMPOTENCY_IN_PROGRESS");
+      // Previous request completed (success or error). Allow re-use with new body.
+      await db.update(idempotencyKeys).set({
+        requestHash,
+        requestMethod: request.method.toUpperCase(),
+        requestPath: request.url,
+        responseStatus: null,
+        responseBody: null,
+        completedAt: null,
+        lockedAt: new Date()
+      }).where(eq(idempotencyKeys.id, existing.id));
+
+      request.idempotency = { key, recordId: existing.id, requestHash, replayed: false };
+      return;
     }
 
     const [created] = await db.insert(idempotencyKeys).values({
@@ -161,6 +211,7 @@ export async function buildServer() {
 }
 
 async function start() {
+  startInlineQueueWorkers();
   const app = await buildServer();
 
   try {

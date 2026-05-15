@@ -9,7 +9,7 @@ import {
 } from "../db/schema/index.js";
 import { hashValue } from "../utils/security.js";
 
-type AiScorePayload = {
+export type AiScorePayload = {
   user_id: string;
   credit_score: number;
   score_range: "prime" | "near_prime" | "subprime" | "deep_subprime";
@@ -28,7 +28,7 @@ type AiScorePayload = {
   processing_time_ms: number;
 };
 
-type AiJobPayload = {
+export type AiJobPayload = {
   user_id: string;
   total_jobs_evaluated: number;
   jobs_passed_hard_filter: number;
@@ -47,6 +47,15 @@ function authHeaders() {
     "content-type": "application/json",
     authorization: `Bearer ${env.AI_SERVICE_TOKEN}`
   };
+}
+
+const VALID_OCCUPATIONS = new Set(["employed", "self_employed", "student", "unemployed"]);
+
+function normalizeOccupation(value: string | null | undefined): "employed" | "self_employed" | "student" | "unemployed" {
+  if (value && VALID_OCCUPATIONS.has(value)) {
+    return value as "employed" | "self_employed" | "student" | "unemployed";
+  }
+  return "unemployed";
 }
 
 function ageFromDateOfBirth(value: string | null | undefined) {
@@ -78,7 +87,7 @@ export const aiClientService = {
     return response.json() as Promise<Record<string, unknown>>;
   },
 
-  async calculateScore(userId: string): Promise<AiScorePayload> {
+  async buildScoreRequestPayload(userId: string) {
     const [user, bets, momo] = await Promise.all([
       db.query.users.findFirst({ where: eq(users.id, userId) }),
       db.query.bettingData.findMany({ where: eq(bettingData.userId, userId), orderBy: [desc(bettingData.transactionDate)] }),
@@ -89,7 +98,7 @@ export const aiClientService = {
       throw new Error("User not found");
     }
 
-    const payload = {
+    return {
       user_id: user.id,
       betting_data: bets.length > 0 ? {
         bets: bets.map((bet) => ({
@@ -120,7 +129,7 @@ export const aiClientService = {
         }))
       } : undefined,
       self_declared: {
-        occupation: user.occupation ?? "unemployed",
+        occupation: normalizeOccupation(user.occupation),
         monthly_income: user.monthlyIncome ?? 0,
         state: user.state ?? "unknown",
         age: ageFromDateOfBirth(user.dateOfBirth),
@@ -130,6 +139,10 @@ export const aiClientService = {
         has_car: false
       }
     };
+  },
+
+  async calculateScore(userId: string): Promise<AiScorePayload> {
+    const payload = await this.buildScoreRequestPayload(userId);
 
     const response = await fetch(`${env.AI_SERVICE_URL}/v1/score/credit`, {
       method: "POST",

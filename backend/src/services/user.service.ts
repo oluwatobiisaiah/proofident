@@ -6,6 +6,14 @@ import { auditService } from "./audit.service.js";
 import { squadService } from "./squad.service.js";
 import { timelineService } from "./timeline.service.js";
 
+type ProfileUpdate = {
+  email?: string | undefined;
+  name?: string | undefined;
+  state?: string | undefined;
+  occupation?: string | undefined;
+  monthlyIncome?: number | undefined;
+};
+
 export const userService = {
   async getById(userId: string) {
     const user = await db.query.users.findFirst({
@@ -49,6 +57,35 @@ export const userService = {
       where: eq(dataSources.userId, userId),
       orderBy: [desc(dataSources.connectedAt)]
     });
+  },
+
+  async updateProfile(userId: string, data: ProfileUpdate) {
+    const updates: Partial<typeof users.$inferInsert> = {};
+    if (data.email !== undefined) updates.email = data.email;
+    if (data.name !== undefined) updates.name = data.name;
+    if (data.state !== undefined) updates.state = data.state;
+    if (data.occupation !== undefined) updates.occupation = data.occupation;
+    if (data.monthlyIncome !== undefined) updates.monthlyIncome = data.monthlyIncome;
+
+    if (Object.keys(updates).length === 0) {
+      return this.getById(userId);
+    }
+
+    const [updated] = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
+    if (!updated) {
+      throw new AppError(404, "User not found", "USER_NOT_FOUND");
+    }
+
+    await auditService.record({
+      actorUserId: userId,
+      action: "user.profile.updated",
+      resourceType: "user",
+      resourceId: userId,
+      status: "success",
+      metadata: { updatedFields: Object.keys(updates) }
+    });
+
+    return updated;
   },
 
   async createUploadPresign(userId: string, sourceType: string) {

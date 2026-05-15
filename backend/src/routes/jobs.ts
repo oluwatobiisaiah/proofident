@@ -14,13 +14,13 @@ export const jobRoutes: FastifyPluginAsync = async (app) => {
     return reply.send({ applications });
   });
   app.get("/jobs/:id", async (request, reply) => {
-    const params = z.object({ id: z.uuid() }).parse(request.params);
+    const params = z.object({ id: z.string() }).parse(request.params);
     const job = await jobService.getJob(params.id);
     return reply.send({ job });
   });
 
   app.post("/jobs/:id/apply", { preHandler: requireAuth }, async (request, reply) => {
-    const params = z.object({ id: z.uuid() }).parse(request.params);
+    const params = z.object({ id: z.string() }).parse(request.params);
     const body = z.object({
       needsLoan: z.boolean().default(false)
     }).parse(request.body);

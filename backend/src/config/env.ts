@@ -40,8 +40,13 @@ const envSchema = z.object({
   MONO_WEBHOOK_SECRET: z.string().min(1).optional(),
   MONO_REALTIME_TRANSACTIONS: z.coerce.boolean().default(true),
   AI_SERVICE_URL: z.url(),
-  AI_SERVICE_TOKEN: z.string().min(1),
-  FILE_UPLOAD_DIR: z.string().min(1).default("./uploads")
+  AI_SERVICE_TOKEN: z.string().min(1).optional(),
+  FILE_UPLOAD_DIR: z.string().min(1).default("./uploads"),
+  CLOUDINARY_CLOUD_NAME: z.string().min(1),
+  CLOUDINARY_API_KEY: z.string().min(1),
+  CLOUDINARY_API_SECRET: z.string().min(1),
+  CLOUDINARY_UPLOAD_FOLDER: z.string().min(1).default("proofident"),
+  RUN_INLINE_QUEUE_WORKERS: z.coerce.boolean().default(true)
 });
 
 const parsed = envSchema.safeParse(process.env);

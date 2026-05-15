@@ -11,7 +11,7 @@ export const loanRoutes: FastifyPluginAsync = async (app) => {
 
   app.post("/loans/apply", { preHandler: requireAuth }, async (request, reply) => {
     const body = z.object({
-      jobId: z.uuid(),
+      jobId: z.string(),
       requestedAmount: z.number().int().positive().optional()
     }).parse(request.body);
     const loan = await loanService.applyForLoan(request.auth!.userId, body.jobId, body.requestedAmount);

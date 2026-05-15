@@ -13,7 +13,7 @@ import { monoConnectService } from "./mono-connect.service.js";
 import { scoreService } from "./score.service.js";
 
 type SourceType = "betting" | "mobile_money" | "telco" | "self_declared";
-type ProviderCode = "sportybet" | "bet9ja" | "nairabet" | "opay" | "palmpay" | "moniepoint" | "kuda" | "sterling" | "other";
+type ProviderCode = "sportybet" | "bet9ja" | "1xbet" | "nairabet" | "opay" | "palmpay" | "moniepoint" | "kuda" | "sterling" | "other";
 
 type MonoTransactionRecord = Record<string, unknown>;
 
@@ -100,11 +100,13 @@ export const ingestionService = {
     }
 
     const name = user.name?.trim();
-    const email = user.email?.trim();
 
-    if (!name || !email) {
-      throw new AppError(400, "User name and email are required before initiating account linking", "PROFILE_INCOMPLETE");
+    if (!name) {
+      throw new AppError(400, "BVN verification is required before linking a bank account — your name must be confirmed first", "PROFILE_INCOMPLETE");
     }
+
+    // Email is optional for account linking; fall back to a derived placeholder if unset
+    const email = user.email?.trim() || `user-${userId.substring(0, 8)}@proofident.app`;
 
     const reference = `mono-${userId}-${Date.now()}`;
     const link = await monoConnectService.initiateAccountLink({
@@ -152,6 +154,15 @@ export const ingestionService = {
     const accountDetails = await monoConnectService.getAccountDetails(exchanged.accountId);
     const institutionName = accountDetails.institution?.name ?? "Mono Connected Account";
 
+    const metadata = {
+      accountName: accountDetails.name ?? null,
+      accountNumber: accountDetails.accountNumber ?? accountDetails.account_number ?? null,
+      accountType: accountDetails.type ?? null,
+      institution: accountDetails.institution ?? null,
+      dataStatus: accountDetails.meta?.data_status ?? null,
+      retrievedData: accountDetails.meta?.retrieved_data ?? []
+    };
+
     const existing = await db.query.dataSources.findFirst({
       where: and(
         eq(dataSources.userId, params.userId),
@@ -166,14 +177,7 @@ export const ingestionService = {
           providerCode: params.providerCode,
           connectionMethod: "oauth",
           consentReference: params.code,
-          metadata: {
-            accountName: accountDetails.account?.name ?? accountDetails.name ?? null,
-            accountNumber: accountDetails.account?.number ?? null,
-            accountType: accountDetails.account?.type ?? null,
-            institution: accountDetails.institution ?? null,
-            dataStatus: accountDetails.meta?.data_status ?? null,
-            retrievedData: accountDetails.meta?.retrieved_data ?? []
-          },
+          metadata,
           status: "active",
           lastSyncedAt: new Date()
         }).where(eq(dataSources.id, existing.id)).returning()
@@ -185,14 +189,7 @@ export const ingestionService = {
           connectionMethod: "oauth",
           providerAccountRef: exchanged.accountId,
           consentReference: params.code,
-          metadata: {
-            accountName: accountDetails.account?.name ?? accountDetails.name ?? null,
-            accountNumber: accountDetails.account?.number ?? null,
-            accountType: accountDetails.account?.type ?? null,
-            institution: accountDetails.institution ?? null,
-            dataStatus: accountDetails.meta?.data_status ?? null,
-            retrievedData: accountDetails.meta?.retrieved_data ?? []
-          },
+          metadata,
           status: "active",
           lastSyncedAt: new Date()
         }).returning();

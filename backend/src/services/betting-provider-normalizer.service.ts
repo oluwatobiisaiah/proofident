@@ -1,6 +1,6 @@
 import { AppError } from "../utils/app-error.js";
 
-type ProviderCode = "sportybet" | "bet9ja" | "nairabet" | "opay" | "palmpay" | "moniepoint" | "kuda" | "sterling" | "other";
+type ProviderCode = "sportybet" | "bet9ja" | "1xbet" | "nairabet" | "opay" | "palmpay" | "moniepoint" | "kuda" | "sterling" | "other";
 
 export type NormalizedBettingRecord = {
   externalBetId?: string | undefined;
@@ -173,6 +173,22 @@ function normalizeNairabetRow(row: RawDelimitedRow): NormalizedBettingRecord {
   };
 }
 
+function normalize1xBetRow(row: RawDelimitedRow): NormalizedBettingRecord {
+  return {
+    externalBetId: row["Bet ID"] || row.bet_id || row.id || undefined,
+    providerReference: row.Reference || row.reference || undefined,
+    transactionDate: requireDate(row.Date || row["Date/Time"] || row.date, "placed date"),
+    settledAt: maybeDate(row["Settled At"] || row.settled_at),
+    amount: toAmount(row.Stake || row.stake || row.Amount),
+    odds: toOdds(row.Odds || row.odds || row.Coefficient),
+    outcome: toOutcome(row.Status || row.status || row.Result),
+    payout: toOptionalAmount(row.Payout || row.payout || row.Return),
+    betType: row["Bet Type"] || row.bet_type || row.Type || undefined,
+    league: row.League || row.league || undefined,
+    rawPayload: row
+  };
+}
+
 function normalizeGenericJsonRecord(input: Record<string, unknown>): NormalizedBettingRecord {
   return {
     externalBetId: typeof input.externalBetId === "string" ? input.externalBetId : typeof input.betId === "string" ? input.betId : undefined,
@@ -203,10 +219,12 @@ export const bettingProviderNormalizerService = {
           return rows.map(normalizeSportyBetRow);
         case "bet9ja":
           return rows.map(normalizeBet9jaRow);
+        case "1xbet":
+          return rows.map(normalize1xBetRow);
         case "nairabet":
           return rows.map(normalizeNairabetRow);
         default:
-          throw new AppError(400, "CSV import is currently supported for SportyBet, Bet9ja, and Nairabet exports", "BETTING_IMPORT_PROVIDER_UNSUPPORTED");
+          throw new AppError(400, `CSV import is not supported for provider: ${params.providerCode}`, "BETTING_IMPORT_PROVIDER_UNSUPPORTED");
       }
     }
 

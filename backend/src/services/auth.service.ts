@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { env } from "../config/env.js";
 import { db } from "../config/database.js";
 import { bvnVerificationSessions, otpVerifications, refreshSessions, users } from "../db/schema/index.js";
@@ -8,6 +8,8 @@ import { hashValue, normalizePhone, safeEqual } from "../utils/security.js";
 import { issueAccessToken, issueRefreshToken, verifyToken } from "../utils/tokens.js";
 import { auditService } from "./audit.service.js";
 import { bvnService } from "./bvn.service.js";
+import { logger } from "../utils/logger.js";
+import { userService } from "./user.service.js";
 
 function generateOtp() {
   return String(randomInt(100000, 999999));
@@ -69,6 +71,10 @@ export const authService = {
 
     if (record.expiresAt.getTime() < Date.now()) {
       throw new AppError(400, "OTP expired", "OTP_EXPIRED");
+    }
+
+    if (record.verified) {
+      throw new AppError(400, "OTP has already been used", "OTP_ALREADY_USED");
     }
 
     if (record.attempts >= env.OTP_MAX_ATTEMPTS) {
@@ -245,6 +251,12 @@ export const authService = {
       status: "success"
     });
 
+    // Auto-provision the Squad virtual account now that identity is confirmed.
+    // Non-blocking — a Squad API failure must not roll back a successful BVN verification.
+    userService.provisionVirtualAccount(userId).catch((err: unknown) => {
+      logger.warn({ err, userId }, "Auto virtual account provisioning failed after BVN verification");
+    });
+
     return updated;
   },
 
@@ -294,13 +306,18 @@ export const authService = {
 
     try {
       const payload = verifyToken(refreshToken, "refresh");
-      if (payload.sid) {
-        await db.update(refreshSessions).set({
-          revokedAt: new Date()
-        }).where(eq(refreshSessions.id, payload.sid));
-      }
+      await Promise.all([
+        // Revoke the refresh session
+        payload.sid
+          ? db.update(refreshSessions).set({ revokedAt: new Date() }).where(eq(refreshSessions.id, payload.sid))
+          : Promise.resolve(),
+        // Bump tokenVersion so all existing access tokens for this user fail immediately
+        db.update(users)
+          .set({ tokenVersion: sql`${users.tokenVersion} + 1` })
+          .where(eq(users.id, payload.sub))
+      ]);
     } catch {
-      return { success: true };
+      // Invalid/expired refresh token — still succeed, nothing to revoke
     }
 
     return { success: true };

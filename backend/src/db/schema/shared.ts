@@ -4,7 +4,7 @@ import { timestamp, uuid, varchar, integer, boolean, jsonb, decimal, text, date,
 export const sourceTypeEnum = pgEnum("source_type", ["betting", "mobile_money", "telco", "self_declared"]);
 export const connectionMethodEnum = pgEnum("connection_method", ["oauth", "manual_upload", "seeded_demo"]);
 export const dataSourceStatusEnum = pgEnum("data_source_status", ["active", "expired", "disconnected", "error"]);
-export const providerCodeEnum = pgEnum("provider_code", ["sportybet", "bet9ja", "nairabet", "opay", "palmpay", "moniepoint", "kuda", "sterling", "other"]);
+export const providerCodeEnum = pgEnum("provider_code", ["sportybet", "bet9ja", "1xbet", "nairabet", "opay", "palmpay", "moniepoint", "kuda", "sterling", "other"]);
 export const scoreRangeEnum = pgEnum("score_range", ["prime", "near_prime", "subprime", "deep_subprime"]);
 export const confidenceLevelEnum = pgEnum("confidence_level", ["low", "medium", "high"]);
 export const loanStatusEnum = pgEnum("loan_status", ["pending", "approved", "disbursed", "active", "overdue", "defaulted", "completed", "rejected"]);
@@ -13,6 +13,12 @@ export const ingestionStatusEnum = pgEnum("ingestion_status", ["uploaded", "vali
 export const riskSeverityEnum = pgEnum("risk_severity", ["low", "medium", "high", "critical"]);
 export const riskStatusEnum = pgEnum("risk_status", ["open", "reviewing", "resolved", "dismissed"]);
 export const transactionStatusEnum = pgEnum("transaction_status", ["pending", "successful", "failed", "reversed", "cancelled"]);
+export const bettingUploadKindEnum = pgEnum("betting_upload_kind", ["screenshot", "csv"]);
+export const uploadStorageProviderEnum = pgEnum("upload_storage_provider", ["cloudinary"]);
+export const uploadLifecycleStatusEnum = pgEnum("upload_lifecycle_status", ["initiated", "uploaded", "processing", "processed", "failed"]);
+export const extractionJobStatusEnum = pgEnum("extraction_job_status", ["queued", "processing", "review_required", "completed", "failed"]);
+export const stagedRecordStatusEnum = pgEnum("staged_record_status", ["pending_review", "confirmed", "rejected", "imported"]);
+export const reviewActionEnum = pgEnum("review_action", ["confirm", "edit", "reject", "bulk_confirm"]);
 
 export const idColumn = uuid("id").defaultRandom().primaryKey();
 export const createdAtColumn = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
