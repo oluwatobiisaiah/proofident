@@ -49,7 +49,9 @@ jobs:
           context: ml
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            service=proofident-ml
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
