@@ -1,12 +1,19 @@
-.venv/
-__pycache__/
-*.py[cod]
-*.egg-info/
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.ruff_cache
 
+# Local env files — never bake secrets into the image
 .env
-.gitignore
-README.md
+.env.*
+!.env.example
 
-.git/
+# Pre-trained local models — Docker build trains fresh via scripts/train_model.py
+src/data/models/
+
+# Dev tooling
 .DS_Store
-Thumbs.db
+*.log

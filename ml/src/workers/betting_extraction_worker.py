@@ -23,6 +23,14 @@ from .queue_config import QUEUE_NAMES, REDIS_CONFIG
 
 logger = logging.getLogger("proofident.worker.betting_extraction")
 
+
+async def _download_file(url: str) -> bytes:
+    async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        return response.content
+
+
 PROVIDER_KEYWORDS: dict[str, list[str]] = {
     "bet9ja": ["bet placed", "winnings", "transaction history", "bet id"],
     "sportybet": ["my bets", "single", "multiple", "stake", "payout"],
@@ -389,6 +397,107 @@ def _parse_bet9ja(lines: list[dict[str, Any]], upload_file_id: str) -> list[dict
     return list(grouped.values())
 
 
+def _is_sportybet_slip(text: str) -> bool:
+    """Detect a bet slip image vs a history/list view."""
+    lower = text.lower()
+    signals = sum(1 for kw in ("total stake", "total odds", "booking code", "win pot", "total return") if kw in lower)
+    return signals >= 1
+
+
+def _parse_sportybet_slip(lines: list[dict[str, Any]], upload_file_id: str) -> list[dict[str, Any]]:
+    """Parse a SportyBet bet slip — entire image is ONE accumulator/single record."""
+    all_text = " ".join(item["text"] for item in lines)
+
+    # Ticket ID and date: "Ticket 04/18, ID: 233442 23:22"
+    date_str: str | None = None
+    ticket_id: str | None = None
+    ticket_match = re.search(
+        r"Ticket\s+(\d{1,2}/\d{1,2})[,\s]+ID[:\s#]*(\w+)\s+(\d{2}:\d{2})",
+        all_text, re.IGNORECASE,
+    )
+    if ticket_match:
+        date_part, ticket_id, time_part = ticket_match.groups()
+        try:
+            m, d = map(int, date_part.split("/"))
+            parsed = datetime(datetime.now().year, m, d, *map(int, time_part.split(":")), tzinfo=timezone.utc)
+            date_str = parsed.isoformat()
+        except ValueError:
+            pass
+
+    # Fallback: bare "MM/DD HH:MM" pattern anywhere in text
+    if not date_str:
+        bare = re.search(r"\b(\d{1,2}/\d{1,2})\s+(\d{2}:\d{2})\b", all_text)
+        if bare:
+            try:
+                m, d = map(int, bare.group(1).split("/"))
+                parsed = datetime(datetime.now().year, m, d, *map(int, bare.group(2).split(":")), tzinfo=timezone.utc)
+                date_str = parsed.isoformat()
+            except ValueError:
+                pass
+
+    # Stake: "Total Stake 1,000.00" preferred; fallback "1,000.42 Stake"
+    stake_match = (
+        re.search(r"Total\s+Stake\s+([\d,]+(?:\.\d{1,2})?)", all_text, re.IGNORECASE) or
+        re.search(r"([\d,]+(?:\.\d{1,2})?)\s+Stake\b", all_text, re.IGNORECASE)
+    )
+    stake = _parse_amount(stake_match.group(1) if stake_match else None)
+
+    # Total odds: "Total Odds 675.04"
+    odds_match = re.search(r"Total\s+Odds\s+([\d,]+(?:\.\d+)?)", all_text, re.IGNORECASE)
+    odds = _parse_odds(odds_match.group(1) if odds_match else None)
+
+    # Outcome: "Multiple Won/Lost", "Single Won/Lost", bare "Won"/"Lost"
+    outcome_match = re.search(
+        r"\b(Multiple\s+(?:Won|Lost)|Single\s+(?:Won|Lost)|Won|Lost|Pending)\b",
+        all_text, re.IGNORECASE,
+    )
+    outcome = _normalize_outcome(outcome_match.group(1) if outcome_match else None)
+
+    # Prefer "Total Return" (settled actual amount) over "Win Pot." (pre-settlement potential)
+    total_return_match = (
+        re.search(r"([\d,]+(?:\.\d{1,2})?)\s+Total\s+Return", all_text, re.IGNORECASE) or
+        re.search(r"Total\s+Return\s+([\d,]+(?:\.\d{1,2})?)", all_text, re.IGNORECASE)
+    )
+    win_pot_match = re.search(r"([\d,]+(?:\.\d{1,2})?)\s+Win\s*Pot", all_text, re.IGNORECASE)
+    payout = _parse_amount(
+        total_return_match.group(1) if total_return_match else (win_pot_match.group(1) if win_pot_match else None)
+    )
+
+    is_multiple = bool(re.search(r"\bMultiple\b", all_text, re.IGNORECASE))
+    avg_conf = sum(item["confidence"] for item in lines) / max(len(lines), 1)
+    provider_ref = f"sportybet-{ticket_id}" if ticket_id else f"{upload_file_id}:slip"
+
+    row: dict[str, Any] = {
+        "upload_file_id": upload_file_id,
+        "external_bet_id": ticket_id,
+        "provider_reference": provider_ref,
+        "transaction_date": date_str,
+        "settled_at": date_str,
+        "bet_amount": stake,
+        "odds": odds,
+        "outcome": outcome,
+        "payout_amount": payout,
+        "bet_type": "multiple" if is_multiple else "single",
+        "league": None,
+        "event_name": None,
+        "extraction_confidence": round(avg_conf, 4),
+        "parser_code": "sportybet_screenshot_v1",
+        "validation_issues": [],
+        "raw_extraction_payload": {"text": all_text[:1000]},
+        "normalized_payload": {},
+    }
+    row["validation_issues"] = _validate_row(row)
+    row["normalized_payload"] = {
+        "transaction_date": row["transaction_date"],
+        "bet_amount": row["bet_amount"],
+        "odds": row["odds"],
+        "outcome": row["outcome"],
+        "payout_amount": row["payout_amount"],
+        "event_name": row["event_name"],
+    }
+    return [row]
+
+
 def _parse_card_based(lines: list[dict[str, Any]], upload_file_id: str, provider_code: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for card in _segment_cards(lines):
@@ -534,6 +643,8 @@ async def _extract_rows(provider_code: str, upload_kind: str, files: list[dict[s
 
         if provider_code == "bet9ja":
             all_rows.extend(_parse_bet9ja(lines, file["upload_file_id"]))
+        elif provider_code == "sportybet" and _is_sportybet_slip(text):
+            all_rows.extend(_parse_sportybet_slip(lines, file["upload_file_id"]))
         else:
             all_rows.extend(_parse_card_based(lines, file["upload_file_id"], provider_code))
 
@@ -562,8 +673,9 @@ class BettingExtractionWorker:
             {"connection": REDIS_CONFIG},
         )
 
-    async def process_job(self, job) -> dict[str, str]:
+    async def process_job(self, job, token: str | None = None) -> dict[str, str]:
         data = job.data
+        print(f"[worker] received job {data.get('extraction_job_id')} provider={data.get('provider_code')} kind={data.get('upload_kind')}", flush=True)
         try:
             ocr_provider, rows, source_breakdown, file_analyses, authenticity = await _extract_rows(
                 provider_code=str(data["provider_code"]),

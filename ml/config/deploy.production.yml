@@ -1,0 +1,63 @@
+service: proofident-ml
+image: idylabsllc/proofident-ml
+primary_role: api
+
+registry:
+  server: ghcr.io
+  username: <%= ENV["GITHUB_ACTOR"] %>
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+servers:
+  api:
+    hosts:
+      - <%= ENV["SERVER_IP"] %>
+    cmd: python main.py
+    options:
+      memory: 1g
+    proxy:
+      ssl: true
+      host: ml.proofident.idylabs.com
+      app_port: 8001
+      healthcheck:
+        path: /health
+        interval: "15s"
+        timeout: "10s"
+        # Models load from disk in ~10s; give 3 minutes headroom
+        max_attempts: 12
+
+  worker:
+    hosts:
+      - <%= ENV["SERVER_IP"] %>
+    cmd: python worker_main.py
+    options:
+      memory: 512m
+
+env:
+  clear:
+    ENV: production
+    HOST: "0.0.0.0"
+    PORT: "8001"
+    LOG_LEVEL: info
+    # No API_KEY set → auth disabled (internal service, backend calls it directly)
+    API_KEY: ""
+    ALLOWED_ORIGINS: https://api.proofident.idylabs.com
+    MODEL_DIR: src/data/models
+    OCR_PROVIDER_PRIMARY: tesseract
+    OCR_PROVIDER_FALLBACK: "none"
+    TESSERACT_BINARY_PATH: tesseract
+    # OCR_HTTP_URL / OCR_HTTP_TOKEN intentionally omitted — switch to http provider later if needed
+  secret:
+    - REDIS_URL
+
+deploy:
+  ssh:
+    user: deploy
+  timeout: 600
+  retain_containers: 1
+
+builder:
+  arch: amd64
+  cache:
+    type: gha
+    options: mode=max

@@ -102,7 +102,7 @@ class ScoreCalculationWorker:
             {"connection": REDIS_CONFIG},
         )
 
-    async def process_job(self, job) -> dict[str, str]:
+    async def process_job(self, job, token: str | None = None) -> dict[str, str]:
         data = job.data
         job_id = str(data["job_id"])
         user_id = str(data["user_id"])

@@ -9,6 +9,5 @@ joblib==1.4.2
 python-dotenv==1.0.1
 httpx==0.28.1
 bullmq==2.16.1
-redis==5.2.1
 Pillow==11.0.0
 pytesseract==0.3.13
