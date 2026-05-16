@@ -10,7 +10,7 @@ const envSchema = z.object({
   REDIS_URL: z.url().default("redis://localhost:6379"),
   JWT_SECRET: z.string().min(32),
   JWT_ISSUER: z.string().default("proofident"),
-  ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().min(5).max(120).default(15),
+  ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().min(5).max(120).default(120),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
   ALLOWED_ORIGINS: z.string().default("http://localhost:3001"),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info"),
