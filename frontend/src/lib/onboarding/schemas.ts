@@ -6,23 +6,6 @@ import { z } from "zod";
 // useForm instance knows about every field.
 export const welcomeSchema = z.object({});
 
-export const phoneSchema = z.object({
-  phone: z
-    .string()
-    .min(1, "Phone number is required")
-    .regex(
-      /^(\+?234|0)[789]\d{9}$/,
-      "Enter a valid Nigerian number (e.g. 08012345678)"
-    ),
-});
-
-export const otpSchema = z.object({
-  otp: z
-    .string()
-    .length(6, "Enter the 6-digit code sent to your phone")
-    .regex(/^\d+$/, "OTP must contain digits only"),
-});
-
 export const bvnSchema = z.object({
   bvn: z
     .string()
@@ -30,12 +13,44 @@ export const bvnSchema = z.object({
     .regex(/^\d+$/, "BVN must contain digits only"),
 });
 
+// Step shown immediately after BVN entry:
+// • dateOfBirth — collected via Calendar, stored as a Date object
+// • bvnOtp      — the 6-digit OTP the BVN verification sends to the user's phone
+export const bvnVerificationSchema = z.object({
+  dateOfBirth: z
+  .date({
+    error: () => "Select your date of birth",
+  })
+  .refine(
+    (d) => {
+      const today = new Date();
+      let age = today.getFullYear() - d.getFullYear();
+      const monthDiff = today.getMonth() - d.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < d.getDate())) {
+        age--;
+      }
+      return age >= 18;
+    },
+    { message: "You must be at least 18 years old" }
+  )
+  .refine(
+    (d) => d <= new Date(),
+    { message: "Date of birth cannot be in the future" }
+  ),
+
+  bvnOtp: z
+    .string()
+    .min(6, "Enter the 6-digit code sent to your BVN-linked number")
+    .regex(/^\d+$/, "OTP must contain digits only"),
+});
+
 // Data sources are all optional — the array can be empty
 export const dataSourcesSchema = z.object({
-  dataSources: z.array(z.string()).default([]),
+  dataSources: z.array(z.string()),
 });
 
 export const profileSchema = z.object({
+  // @ts-expect-error Package incompatibility error
   occupation: z.enum(["employed", "self_employed", "student", "unemployed"], {
     required_error: "Select your employment status",
   }),
@@ -52,9 +67,8 @@ export const profileSchema = z.object({
 // Merged into one so a single useForm instance covers all fields.
 // On intermediate steps, only the current step's fields are trigger()'d.
 // On final submit, the full schema fires — catching anything that slipped through.
-export const proofidentSchema = phoneSchema
-  .merge(otpSchema)
-  .merge(bvnSchema)
+export const proofidentSchema = bvnSchema
+  .merge(bvnVerificationSchema)
   .merge(dataSourcesSchema)
   .merge(profileSchema);
 
@@ -64,9 +78,8 @@ export type ProofidentFormData = z.infer<typeof proofidentSchema>;
 // These are identical to the per-step schemas above — re-exported
 // under cleaner names for use in the steps config.
 export {
-  phoneSchema as step1Schema,
-  otpSchema as step2Schema,
-  bvnSchema as step3Schema,
-  dataSourcesSchema as step4Schema,
-  profileSchema as step5Schema,
+  bvnSchema as step1Schema,
+  bvnVerificationSchema as step2Schema,
+  dataSourcesSchema as step3Schema,
+  profileSchema as step4Schema,
 };

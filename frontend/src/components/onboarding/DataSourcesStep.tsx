@@ -1,24 +1,79 @@
+"use client";
+
+import Image from "next/image";
 import { Controller, useFormContext } from "react-hook-form";
 import { ProofidentFormData } from "@/lib/onboarding/schemas";
-import { Field, FieldLabel, FieldError, FieldDescription } from "@/components/ui/field";
-import { DATA_SOURCES } from "@/lib/onboarding/steps";
+import {
+  Field,
+  FieldLabel,
+  FieldError,
+  FieldDescription,
+  FieldSeparator,
+} from "@/components/ui/field";
+import { DATA_SOURCES, SUPPORTED_BANKS } from "@/lib/onboarding/steps";
+import { useCallback, useState } from "react";
+import { NEXT_PUBLIC_MONO_PUBLIC_KEY } from "@/lib/envVariables";
+import { cn } from "@/lib/utils";
+import { Info } from "lucide-react";
 
 function StarRating({ count }: { count: number }) {
   return (
-    <span className="text-amber-500 text-xs tracking-tighter">
+    <span className='text-amber-500 text-xs tracking-tighter'>
       {"★".repeat(count)}
-      <span className="text-zinc-700">{"★".repeat(5 - count)}</span>
+      <span className='text-zinc-700'>{"★".repeat(5 - count)}</span>
     </span>
   );
 }
 
+const bankDataAndId = {};
+
 export function DataSourcesStep() {
   const { control } = useFormContext<ProofidentFormData>();
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
+  // Somehhow when we signup or sign-in, the name and email will be readily available from
+  // next-auth, the below is just a placeholder
+  const customer = {
+    name: "Samuel Olumide",
+    email: "samuel.olumide@gmail.com",
+  };
+
+  const openMonoWidget = useCallback(async (institutionId: string) => {
+    const MonoConnect = (await import("@mono.co/connect.js")).default;
+
+    const monoInstance = new MonoConnect({
+      key: NEXT_PUBLIC_MONO_PUBLIC_KEY,
+      data: { customer },
+      onClose: () => console.log("Widget closed"),
+      onLoad: () => setScriptLoaded(true),
+      onSuccess: async ({ code }: { code: string }) =>
+        // Send code to the server endpoint
+        console.log(`Linked successfully: ${code}`),
+    });
+
+    const config = {
+      selectedInstitution: {
+        id: institutionId,
+      },
+    };
+    monoInstance.setup(institutionId !== "" ? config : null);
+    monoInstance.open();
+  }, []);
+
+  const onClickHandler = (id: string) => {
+    if (id in SUPPORTED_BANKS) {
+      openMonoWidget(SUPPORTED_BANKS[id]);
+    }
+    // Call that of Betting platforms here
+    // Call that of contact here
+  };
   return (
-    <div className="space-y-5">
-      <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
-        <p className="text-zinc-500 text-xs leading-relaxed">
+    <div className='space-y-5 font-inter'>
+      <div className='p-3 rounded-lg bg-black/10 border border-black/40 flex gap-2'>
+        <p className="">
+          <Info className="text-black size-6" />
+        </p>
+        <p className='text-black text-xs leading-relaxed flex-1'>
           You can skip all of these and use self-declared info only — but
           connecting at least one source increases your score confidence
           significantly.
@@ -26,111 +81,74 @@ export function DataSourcesStep() {
       </div>
 
       <Controller
-        name="dataSources"
+        name='dataSources'
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel className="text-zinc-300 text-sm font-medium sr-only">
+            <FieldLabel className='text-zinc-300 text-sm font-medium sr-only'>
               Data Sources
             </FieldLabel>
 
-            <div className="space-y-2" role="group" aria-label="Select data sources">
+            <div
+              className='space-y-10'
+              role='group'
+              aria-label='Select data sources'
+            >
               {DATA_SOURCES.map((source) => {
-                const isSelected = field.value?.includes(source.id) ?? false;
-
-                const toggle = () => {
-                  const current: string[] = field.value ?? [];
-                  const next = isSelected
-                    ? current.filter((v) => v !== source.id)
-                    : [...current, source.id];
-                  field.onChange(next);
-                };
-
                 return (
-                  <button
-                    key={source.id}
-                    type="button"
-                    role="checkbox"
-                    aria-checked={isSelected}
-                    onClick={toggle}
-                    className={[
-                      "w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all duration-150",
-                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
-                      isSelected
-                        ? "bg-amber-500/8 border-amber-500/40"
-                        : "bg-zinc-900 border-zinc-800 hover:border-zinc-700",
-                    ].join(" ")}
-                  >
-                    {/* Icon */}
-                    <span className="text-xl w-8 text-center flex-shrink-0">
-                      {source.emoji}
-                    </span>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white text-sm font-medium">
-                          {source.label}
-                        </span>
-                        {source.badge && (
-                          <span className="text-[9px] font-bold bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-widest">
-                            {source.badge}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-zinc-600 text-xs">
-                          {source.description}
-                        </span>
-                        <StarRating count={source.stars} />
-                      </div>
+                  <div className='flex flex-col gap-5'>
+                    <div>
+                      <FieldSeparator className='uppercase text-black/80 font-medium'>
+                        {source.category}
+                      </FieldSeparator>
                     </div>
-
-                    {/* Checkbox indicator */}
-                    <div
-                      aria-hidden="true"
-                      className={[
-                        "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-150",
-                        isSelected
-                          ? "bg-amber-500 border-amber-500"
-                          : "border-zinc-700",
-                      ].join(" ")}
-                    >
-                      {isSelected && (
-                        <svg
-                          width="10"
-                          height="8"
-                          viewBox="0 0 10 8"
-                          fill="none"
-                          aria-hidden="true"
+                    <div className='space-y-3'>
+                      {source.institutions.map((institution) => (
+                        <button
+                          key={institution.id}
+                          type='button'
+                          role='checkbox'
+                          onClick={() => onClickHandler(institution.id)}
+                          className={cn(
+                            "w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all duration-150",
+                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 bg-black",
+                          )}
                         >
-                          <path
-                            d="M1 4L3.5 6.5L9 1"
-                            stroke="black"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                          {/* Icon */}
+                          <Image
+                            src={institution.image}
+                            alt={`${institution.label} logo`}
+                            width={32}
+                            height={32}
+                            className='rounded-full object-center object-cover'
                           />
-                        </svg>
-                      )}
+
+                          {/* Info */}
+                          <div className='flex-1 min-w-0'>
+                            <div className='flex items-center gap-2 flex-wrap'>
+                              <span className='text-white text-sm font-medium'>
+                                {institution.label}
+                              </span>
+                              {institution.badge && (
+                                <span className='text-[9px] font-bold bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-widest'>
+                                  {institution.badge}
+                                </span>
+                              )}
+                            </div>
+                            <div className='flex items-center gap-2 mt-0.5'>
+                              <span className='text-white/70 text-xs'>
+                                {institution.description}
+                              </span>
+                              <StarRating count={institution.stars} />
+                            </div>
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
-
-            <FieldDescription className="text-zinc-600 text-xs">
-              {field.value?.length
-                ? `${field.value.length} source${field.value.length > 1 ? "s" : ""} selected`
-                : "None selected — score will use self-declared info only"}
-            </FieldDescription>
-
-            {fieldState.invalid && (
-              <FieldError
-                errors={[fieldState.error]}
-                className="text-red-400 text-xs"
-              />
-            )}
           </Field>
         )}
       />

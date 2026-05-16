@@ -5,11 +5,10 @@ import { ArrowRight } from "lucide-react";
 
 export function WelcomeScreen() {
   return (
-    <div className='flex flex-col px-6'>
+    <div className='flex flex-col px-6 font-inter'>
       <header className="pt-10 pb-4 text-center">
         <span
-          className="text-xl font-black tracking-tight text-black inline-flex gap-px"
-          style={{ fontFamily: "'Syne', sans-serif" }}
+          className="text-xl font-black tracking-tight text-black inline-flex gap-px font-inter"
         >
           <span className="">Proof</span><span className="text-black/40">ident</span>
         </span>
@@ -24,8 +23,7 @@ export function WelcomeScreen() {
         {/* Headline + sub */}
         <div className='space-y-4 text-center'>
           <h1
-            className='text-3xl font-extrabold text-black leading-[1.1] tracking-tight '
-            style={{ fontFamily: "'Syne', sans-serif" }}
+            className='text-3xl font-extrabold text-black leading-[1.1] tracking-tight font-ptserif'
           >
             Get a credit score & job matches in 5 minutes.
           </h1>
