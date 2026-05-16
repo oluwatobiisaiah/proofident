@@ -33,7 +33,7 @@ servers:
 
 env:
   clear:
-    ENV: developement
+    ENV: development
     HOST: "0.0.0.0"
     PORT: "8001"
     LOG_LEVEL: info
