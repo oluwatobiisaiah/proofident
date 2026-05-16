@@ -19,7 +19,7 @@ export async function sendOTP(
       "Content-Type": "application/json",
       "Idempotency-Key": `send-otp-${reqId}`,
     },
-    body: JSON.stringify({ phone: data.phone }),
+    body: JSON.stringify({ phone: data.phone.replace(/\s/g, "") }),
   });
 
   if (!res.ok) {

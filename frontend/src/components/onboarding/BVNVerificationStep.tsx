@@ -26,16 +26,17 @@ import { InitiateBVNRequestSuccess } from "@/lib/onboarding/api";
 export function BVNVerificationStep() {
   const { control, watch } = useFormContext<ProofidentFormData>();
 
-  const { stepData } = useMultiStepForm<ProofidentFormData>();
-  const bvnStepRes = stepData["bvn"] as InitiateBVNRequestSuccess | undefined;
+  // const { stepData } = useMultiStepForm<ProofidentFormData>();
+  // const bvnStepRes = stepData["bvn"] as InitiateBVNRequestSuccess | undefined;
 
-  const bvnExpire =
-    bvnStepRes?.expiresAt && bvnStepRes?.expiresAt !== "expired" && new Date(bvnStepRes?.expiresAt).getTime();
+  // const bvnExpire =
+  //   bvnStepRes?.expiresAt && bvnStepRes?.expiresAt !== "expired" && new Date(bvnStepRes?.expiresAt).getTime();
   
-  const rawSecOTPExpire = bvnExpire ? (bvnExpire - Date.now())/1000: 0;
-  const secOTPExpire = Math.floor(rawSecOTPExpire);
+  // const rawSecOTPExpire = bvnExpire ? (bvnExpire - Date.now())/1000: 0;
+  // const secOTPExpire = Math.floor(rawSecOTPExpire);
 
-  const [resendTimer, setResendTimer] = useState(secOTPExpire);
+  // const [resendTimer, setResendTimer] = useState(secOTPExpire);
+  const [resendTimer, setResendTimer] = useState(30);
   const [canResend, setCanResend] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -45,7 +46,7 @@ export function BVNVerificationStep() {
   useEffect(() => {
     if (resendTimer <= 0) {
       setCanResend(true);
-      (stepData["bvn"] as InitiateBVNRequestSuccess).expiresAt = "expired"
+      // (stepData["bvn"] as InitiateBVNRequestSuccess).expiresAt = "expired"
       return;
     }
     const t = setTimeout(() => setResendTimer((n) => n - 1), 1000);

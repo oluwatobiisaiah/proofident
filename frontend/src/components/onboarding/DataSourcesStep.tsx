@@ -10,11 +10,19 @@ import {
   FieldDescription,
   FieldSeparator,
 } from "@/components/ui/field";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { DATA_SOURCES, SUPPORTED_BANKS } from "@/lib/onboarding/steps";
 import { useCallback, useState } from "react";
 import { NEXT_PUBLIC_MONO_PUBLIC_KEY } from "@/lib/envVariables";
 import { cn } from "@/lib/utils";
 import { Info } from "lucide-react";
+import BettingDropzone, { UploadHandler } from "@/components/onboarding/BettingDropzone";
 
 function StarRating({ count }: { count: number }) {
   return (
@@ -27,7 +35,12 @@ function StarRating({ count }: { count: number }) {
 
 const bankDataAndId = {};
 
-export function DataSourcesStep() {
+export function DataSourcesStep({
+  onBettingUpload = async () => {},
+}: {
+  onBettingUpload?: UploadHandler;
+}) {
+  const [activeBettingId, setActiveBettingId] = useState<string | null>(null);
   const { control } = useFormContext<ProofidentFormData>();
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
@@ -61,17 +74,28 @@ export function DataSourcesStep() {
   }, []);
 
   const onClickHandler = (id: string) => {
+    // Call that of Betting platforms here
+    const isBetting = DATA_SOURCES.find(
+  (cat) =>
+    cat.category === "betting platforms" &&   // ← was "betting institutions"
+    cat.institutions.some((inst) => inst.id === id),
+);
+
+    if (isBetting) {
+      // Toggle the dropzone open/closed for this betting source
+      setActiveBettingId((prev) => (prev === id ? null : id));
+      return;
+    }
+
     if (id in SUPPORTED_BANKS) {
       openMonoWidget(SUPPORTED_BANKS[id]);
     }
-    // Call that of Betting platforms here
-    // Call that of contact here
   };
   return (
     <div className='space-y-5 font-inter'>
       <div className='p-3 rounded-lg bg-black/10 border border-black/40 flex gap-2'>
-        <p className="">
-          <Info className="text-black size-6" />
+        <p className=''>
+          <Info className='text-black size-6' />
         </p>
         <p className='text-black text-xs leading-relaxed flex-1'>
           You can skip all of these and use self-declared info only — but
@@ -152,6 +176,49 @@ export function DataSourcesStep() {
           </Field>
         )}
       />
+      {/* Betting dropzone dialog — rendered once, controlled by activeBettingId */}
+      {(() => {
+        const activeBettingSource = DATA_SOURCES.flatMap(
+          (cat) => cat.institutions,
+        ).find((inst) => inst.id === activeBettingId);
+
+        return (
+          <Dialog
+            open={activeBettingId !== null}
+            onOpenChange={(open) => {
+              if (!open) setActiveBettingId(null);
+            }}
+          >
+            <DialogContent className='sm:max-w-md'>
+              <DialogHeader>
+                <DialogTitle className='flex items-center gap-2'>
+                  {activeBettingSource && (
+                    <Image
+                      src={activeBettingSource.image}
+                      alt={activeBettingSource.label}
+                      width={24}
+                      height={24}
+                      className='rounded-full object-cover'
+                    />
+                  )}
+                  {activeBettingSource?.label} Transaction History
+                </DialogTitle>
+                <DialogDescription>
+                  Upload your betting slips or transaction history screenshots.
+                  Files are uploaded immediately on drop.
+                </DialogDescription>
+              </DialogHeader>
+
+              {activeBettingSource && (
+                <BettingDropzone
+                  source={activeBettingSource}
+                  onUpload={onBettingUpload}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }

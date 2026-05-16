@@ -65,48 +65,48 @@ export function OnboardingForm() {
 
     switch (stepId) {
       case "bvn":
-        if (!data.bvn)
-          return {
-            ok: false,
-            field: "bvn",
-            message: "BVN is required",
-          };
+        // if (!data.bvn)
+        //   return {
+        //     ok: false,
+        //     field: "bvn",
+        //     message: "BVN is required",
+        //   };
 
-        try {
-          const response = await InitiateBVNRequest(
-            {
-              bvn: data.bvn,
-            },
-            session?.accessToken,
-          );
+        // try {
+        //   const response = await InitiateBVNRequest(
+        //     {
+        //       bvn: data.bvn,
+        //     },
+        //     session?.accessToken,
+        //   );
 
-          // Store data
-          stepData.current[stepId] = response;
-          return { ok: true };
-        } catch (err) {}
+        //   // Store data
+        //   stepData.current[stepId] = response;
+        //   return { ok: true };
+        // } catch (err) {}
         return { ok: true };
       case "bvn-verification":
-        const bvn = form.getValues("bvn");
-        if (!data.bvnOtp || !bvn || !data.dateOfBirth)
-          return {
-            ok: false,
-            field: "bvnOtp",
-            message: "OTP is required",
-          };
+        // const bvn = form.getValues("bvn");
+        // if (!data.bvnOtp || !bvn || !data.dateOfBirth)
+        //   return {
+        //     ok: false,
+        //     field: "bvnOtp",
+        //     message: "OTP is required",
+        //   };
 
         try {
-          const response = await verifyBVN(
-            {
-              bvn,
-              bvnOtp: data.bvnOtp,
-              dateOfBirth: data.dateOfBirth,
-            },
-            session?.accessToken,
-            (stepData.current["bvn"] as InitiateBVNRequestSuccess).sessionId,
-          );
+        //   const response = await verifyBVN(
+        //     {
+        //       bvn,
+        //       bvnOtp: data.bvnOtp,
+        //       dateOfBirth: data.dateOfBirth,
+        //     },
+        //     session?.accessToken,
+        //     (stepData.current["bvn"] as InitiateBVNRequestSuccess).sessionId,
+        //   );
 
-          // Store data
-          stepData.current[stepId] = response;
+        //   // Store data
+        //   stepData.current[stepId] = response;
           return { ok: true };
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);

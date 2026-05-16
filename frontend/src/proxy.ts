@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 const authRoutes = ["/login"];
 
 export function proxy(request: NextRequest) {
-  const path = request.nextUrl.pathname;
+  // const path = request.nextUrl.pathname;
 
   // const isAuthRoute = authRoutes.some((route) => path === route || path.startsWith(`${route}`));
 

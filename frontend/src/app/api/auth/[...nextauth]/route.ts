@@ -3,7 +3,7 @@ import type { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { jwtDecode } from "jwt-decode";
-import { nanoid } from "nanoid"
+import { nanoid } from "nanoid";
 
 declare module "next-auth" {
   interface User {
@@ -78,7 +78,10 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
     const url = process.env.API_URL;
     const res = await fetch(`${url}/auth/refresh-token`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Idempotency-Key": `refresh-token-${reqId}` },
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": `refresh-token-${reqId}`,
+      },
       body: JSON.stringify({ refreshToken: token.refreshToken }),
     });
 
@@ -89,7 +92,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
     return {
       ...token,
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken, 
+      refreshToken: result.refreshToken,
       accessTokenExpires: decoded.exp * 1000,
     };
     // eslint-disable-next-line
@@ -114,24 +117,39 @@ export const authOptions: NextAuthOptions = {
         const url = process.env.API_URL;
 
         const reqId = nanoid();
+        console.log(credentials, "See mr", url);
         const res = await fetch(`${url}/auth/verify-otp`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Idempotency-Key": `verify-otp-${reqId}` },
-          body: JSON.stringify(credentials),
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": `verify-otp-${reqId}`,
+          },
+          body: JSON.stringify({
+            phone: credentials.phone.replace(/\s/g, ""),
+            otp: credentials.otp,
+          }),
         });
 
         if (!res.ok) {
+          console.log("Fial here?");
           const body = await res.json().catch(() => null);
+          console.log(body, "data");
+          console.log(JSON.stringify(body, null, 2), "Stringified here");
           throw new Error(
             body?.error || body?.message || "Login request failed",
           );
         }
-
+        console.log("Passed a");
         const result = (await res.json()) as LoginResponse;
- 
+        console.log("b", result);
         const { accessToken, refreshToken, user: userData } = result;
-        const decoded = jwtDecode<{ exp: number }>(accessToken);
-
+        try {
+          const decoded = jwtDecode<{ exp: number }>(accessToken);
+          console.log(decoded);
+        } catch (err) {
+          console.error("JWT decode failed", err);
+        }
+        // console.log("Passed decoding", new Date(decoded.exp));
         return {
           id: userData.id,
           name: userData.name,
@@ -158,12 +176,14 @@ export const authOptions: NextAuthOptions = {
           accessTokenExpires: user.accessTokenExpires,
           user: {
             id: user.id,
-            name: user.name as (string | null),
-            email: user.email as (string | null),
+            name: user.name as string | null,
+            email: user.email as string | null,
             phone: user.phone,
           },
         };
       }
+
+      console.log("I ran")
 
       // Check if token is still valid
       if (Date.now() < token.accessTokenExpires) {
