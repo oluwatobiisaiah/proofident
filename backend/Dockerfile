@@ -29,7 +29,7 @@ COPY --from=builder /app/dist ./dist
 # Migration SQL files — needed by dist/migrate.js at runtime
 COPY --from=builder /app/src/db/migrations ./src/db/migrations
 
-ENV NODE_ENV=production
+ENV NODE_ENV=test
 
 # Default entrypoint — overridden per-role in Kamal config
 CMD ["node", "dist/server.js"]
