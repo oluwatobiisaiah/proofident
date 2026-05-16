@@ -2,7 +2,12 @@ import { useMultiStepForm } from "@/hooks/useMultiStepForm";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
 
-export function FormNavigation() {
+export function FormNavigation({
+  finalButtonLabel = {
+    label: "Get my credit score",
+    submissionLabel: "Analyzing your data…"
+  }
+}) {
   const { isFirstStep, isLastStep, isLoading, prevStep, nextStep } =
     useMultiStepForm();
 
@@ -28,16 +33,16 @@ export function FormNavigation() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="flex-1 bg-black hover:bg-black/80 text-white font-semibold transition-all h-11"
+          className="flex-1 bg-black hover:bg-black/90 text-white font-semibold transition-all h-11"
         >
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Analyzing your data…
+             { finalButtonLabel.submissionLabel}
             </>
           ) : (
             <>
-              Get my credit score
+              { finalButtonLabel.label }
             </>
           )}
         </Button>
@@ -47,7 +52,7 @@ export function FormNavigation() {
           type="button"
           onClick={nextStep}
           disabled={isLoading}
-          className="flex-1 bg-black hover:bg-black/80 text-white font-semibold transition-all h-11"
+          className="flex-1 bg-black hover:bg-black/90 text-white font-semibold transition-all h-11 group"
         >
           {isLoading ? (
             <>
@@ -57,7 +62,7 @@ export function FormNavigation() {
           ) : (
             <>
               Continue
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 duration-300 ease-in" />
             </>
           )}
         </Button>

@@ -40,7 +40,7 @@ export function ProfileStep() {
       : "e.g. Jumia — Delivery Coordinator";
 
   return (
-    <FieldGroup className="space-y-5">
+    <FieldGroup className="space-y-2">
 
       {/* Occupation */}
       <Controller
@@ -164,7 +164,7 @@ export function ProfileStep() {
               >
                 <SelectValue placeholder="Select state" />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-800 max-h-60">
+              <SelectContent className="border-black/70 max-h-60!">
                 {NIGERIAN_STATES.map((s) => (
                   <SelectItem
                     key={s}
