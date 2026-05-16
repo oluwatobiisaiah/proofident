@@ -29,8 +29,7 @@ COPY --from=builder /app/dist ./dist
 # Migration SQL files — needed by dist/migrate.js at runtime
 COPY --from=builder /app/src/db/migrations ./src/db/migrations
 
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+RUN printf '#!/bin/sh\nset -e\necho "Running migrations..."\nnode dist/migrate.js\necho "Seeding canonical data..."\nnode dist/seed.js\necho "Starting application..."\nexec "$@"\n' > /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
 
 ENV NODE_ENV=test
 
