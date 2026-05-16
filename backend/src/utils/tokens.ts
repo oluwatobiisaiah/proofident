@@ -11,19 +11,24 @@ type TokenPayload = {
   sid?: string;
 };
 
+const HEADER = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+
 function encode(payload: TokenPayload) {
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = createHmac("sha256", env.JWT_SECRET).update(body).digest("base64url");
-  return `${body}.${signature}`;
+  const signingInput = `${HEADER}.${body}`;
+  const signature = createHmac("sha256", env.JWT_SECRET).update(signingInput).digest("base64url");
+  return `${signingInput}.${signature}`;
 }
 
 function decode(token: string): TokenPayload {
-  const [encodedBody, encodedSignature] = token.split(".");
-  if (!encodedBody || !encodedSignature) {
+  const parts = token.split(".");
+  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) {
     throw new Error("Malformed token");
   }
+  const [encodedHeader, encodedBody, encodedSignature] = parts as [string, string, string];
+  const signingInput = `${encodedHeader}.${encodedBody}`;
 
-  const expectedSignature = createHmac("sha256", env.JWT_SECRET).update(encodedBody).digest("base64url");
+  const expectedSignature = createHmac("sha256", env.JWT_SECRET).update(signingInput).digest("base64url");
   const provided = Buffer.from(encodedSignature);
   const expected = Buffer.from(expectedSignature);
 

@@ -1,5 +1,5 @@
 import { pgTable, index } from "drizzle-orm/pg-core";
-import { createdAtColumn, idColumn, integer, jsonb, updatedAtColumn, uuid, varchar } from "./shared.js";
+import { createdAtColumn, idColumn, integer, jsonb, text, updatedAtColumn, uuid, varchar } from "./shared.js";
 import { employers } from "./employers.js";
 
 export const jobs = pgTable(
@@ -8,6 +8,7 @@ export const jobs = pgTable(
     id: idColumn,
     employerId: uuid("employer_id").references(() => employers.id, { onDelete: "set null" }),
     title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
     employer: varchar("employer", { length: 255 }).notNull(),
     category: varchar("category", { length: 100 }).notNull(),
     locationState: varchar("location_state", { length: 100 }).notNull(),

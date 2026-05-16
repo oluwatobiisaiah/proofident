@@ -130,6 +130,38 @@ export const demoService = {
         bankCode: "058",
         accountName: "Jumia Partner Promotions",
         status: "active"
+      },
+      {
+        id: CANONICAL_IDS.maxEmployer,
+        name: "MAX.ng",
+        squadAccountNumber: "3030303030",
+        bankCode: "058",
+        accountName: "MAX NG Ltd",
+        status: "active"
+      },
+      {
+        id: CANONICAL_IDS.glovoEmployer,
+        name: "Glovo Nigeria",
+        squadAccountNumber: "4040404040",
+        bankCode: "058",
+        accountName: "Glovo Nigeria Ltd",
+        status: "active"
+      },
+      {
+        id: CANONICAL_IDS.palmpayEmployer,
+        name: "PalmPay Agent Banking",
+        squadAccountNumber: "5050505050",
+        bankCode: "058",
+        accountName: "PalmPay Ltd",
+        status: "active"
+      },
+      {
+        id: CANONICAL_IDS.monieEmployer,
+        name: "Moniepoint POS Agent",
+        squadAccountNumber: "6060606060",
+        bankCode: "058",
+        accountName: "Moniepoint MFB",
+        status: "active"
       }
     ]).onConflictDoNothing();
 
@@ -138,6 +170,8 @@ export const demoService = {
         id: CANONICAL_IDS.kwikRiderJob,
         employerId: CANONICAL_IDS.kwikEmployer,
         title: "Delivery Rider",
+        description:
+          "Join Kwik as a delivery rider and earn competitive weekly income by completing on-demand parcel deliveries across Lagos. You set your own hours and keep a high percentage of each delivery fee. A working smartphone and basic road knowledge are all you need to get started.",
         employer: "Kwik Delivery Ltd",
         category: "logistics",
         locationState: "Lagos",
@@ -153,6 +187,8 @@ export const demoService = {
         id: CANONICAL_IDS.retailPromoterJob,
         employerId: CANONICAL_IDS.jumiaEmployer,
         title: "Field Sales Promoter",
+        description:
+          "Represent Jumia's partner brands at markets, shopping plazas, and community events in Kano. Earn a base stipend plus uncapped commissions for every customer you onboard to the Jumia platform. Ideal for outgoing individuals with strong local networks.",
         employer: "Jumia Partner Promotions",
         category: "sales",
         locationState: "Kano",
@@ -162,6 +198,91 @@ export const demoService = {
         minimumIncome: nairaToKobo(90000),
         maximumIncome: nairaToKobo(140000),
         matchCriteriaWeights: { commercial: 0.45, location: 0.25, incomeOpportunity: 0.2, communication: 0.1 },
+        status: "active"
+      },
+      {
+        id: CANONICAL_IDS.maxDispatchJob,
+        employerId: CANONICAL_IDS.maxEmployer,
+        title: "Motorcycle Dispatch Rider",
+        description:
+          "MAX.ng equips you with a brand-new motorcycle on a rent-to-own plan, so zero capital is required upfront. Make daily deliveries for e-commerce and logistics partners across Lagos. Top riders can own their bike outright within 18 months.",
+        employer: "MAX.ng",
+        category: "logistics",
+        locationState: "Lagos",
+        locationAreas: ["Ikeja", "Surulere", "Oshodi", "Agege", "Ikorodu"],
+        requirements: { motorcycle: true, minDiscipline: 65, ageRange: [20, 45] },
+        startupCosts: { securityDeposit: nairaToKobo(30000) },
+        minimumIncome: nairaToKobo(100000),
+        maximumIncome: nairaToKobo(160000),
+        matchCriteriaWeights: { discipline: 0.35, location: 0.3, incomeOpportunity: 0.2, reliability: 0.15 },
+        status: "active"
+      },
+      {
+        id: CANONICAL_IDS.glovoRiderJob,
+        employerId: CANONICAL_IDS.glovoEmployer,
+        title: "Food Delivery Partner",
+        description:
+          "Deliver meals from top restaurants in Abuja on your schedule — morning, afternoon, or evening shifts available. Glovo pays per delivery with a guaranteed minimum per active hour during peak times. Bicycle or motorcycle accepted.",
+        employer: "Glovo Nigeria",
+        category: "logistics",
+        locationState: "Abuja",
+        locationAreas: ["Wuse", "Garki", "Maitama", "Gwarinpa", "Utako"],
+        requirements: { smartphone: true, minDiscipline: 60, ageRange: [18, 45] },
+        startupCosts: { uniformDeposit: nairaToKobo(10000) },
+        minimumIncome: nairaToKobo(80000),
+        maximumIncome: nairaToKobo(130000),
+        matchCriteriaWeights: { discipline: 0.35, location: 0.3, reliability: 0.25, incomeOpportunity: 0.1 },
+        status: "active"
+      },
+      {
+        id: CANONICAL_IDS.palmpayAgentJob,
+        employerId: CANONICAL_IDS.palmpayEmployer,
+        title: "PalmPay Banking Agent",
+        description:
+          "Operate a PalmPay agent point from your existing shop or kiosk. Earn commissions on every cash-in, cash-out, bill payment, and airtime transaction you process. PalmPay provides the POS device, branding, and ongoing training at no cost.",
+        employer: "PalmPay Agent Banking",
+        category: "fintech_agent",
+        locationState: "Rivers",
+        locationAreas: ["Port Harcourt GRA", "Rumuola", "Diobu", "Rumuokoro", "Eleme"],
+        requirements: { existingShop: true, minCommercial: 55, ageRange: [22, 60] },
+        startupCosts: { floatCapital: nairaToKobo(50000) },
+        minimumIncome: nairaToKobo(60000),
+        maximumIncome: nairaToKobo(120000),
+        matchCriteriaWeights: { commercial: 0.4, reliability: 0.3, location: 0.2, incomeOpportunity: 0.1 },
+        status: "active"
+      },
+      {
+        id: CANONICAL_IDS.monieAgentJob,
+        employerId: CANONICAL_IDS.monieEmployer,
+        title: "Moniepoint POS Agent",
+        description:
+          "Become a Moniepoint agent and provide banking services — withdrawals, transfers, and bill payments — to underserved customers in your area. Earn transaction commissions daily. Moniepoint is the top-ranked merchant acquirer in Nigeria with a 99.7% uptime guarantee.",
+        employer: "Moniepoint POS Agent",
+        category: "fintech_agent",
+        locationState: "Kano",
+        locationAreas: ["Kano Municipal", "Nasarawa", "Gwale", "Tarauni", "Ungogo"],
+        requirements: { existingShop: true, minCommercial: 60, ageRange: [22, 60] },
+        startupCosts: { floatCapital: nairaToKobo(60000) },
+        minimumIncome: nairaToKobo(70000),
+        maximumIncome: nairaToKobo(130000),
+        matchCriteriaWeights: { commercial: 0.45, reliability: 0.3, location: 0.15, incomeOpportunity: 0.1 },
+        status: "active"
+      },
+      {
+        id: CANONICAL_IDS.remoteAgentJob,
+        employerId: null,
+        title: "Remote Customer Support Agent",
+        description:
+          "Handle inbound chat and email support for Nigerian fintech and e-commerce brands from anywhere in Nigeria. Shifts are 8 hours, 5 days a week. Salary is paid monthly to your bank account. Laptop and stable internet required — a data stipend is provided.",
+        employer: "TalentPlus Remote Work",
+        category: "remote_work",
+        locationState: "Nationwide",
+        locationAreas: [],
+        requirements: { laptop: true, internet: true, minCommercial: 50, ageRange: [20, 50] },
+        startupCosts: {},
+        minimumIncome: nairaToKobo(80000),
+        maximumIncome: nairaToKobo(110000),
+        matchCriteriaWeights: { communication: 0.4, reliability: 0.3, incomeOpportunity: 0.2, commercial: 0.1 },
         status: "active"
       }
     ]).onConflictDoNothing();

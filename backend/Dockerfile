@@ -29,7 +29,12 @@ COPY --from=builder /app/dist ./dist
 # Migration SQL files — needed by dist/migrate.js at runtime
 COPY --from=builder /app/src/db/migrations ./src/db/migrations
 
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 ENV NODE_ENV=test
 
-# Default entrypoint — overridden per-role in Kamal config
+# entrypoint runs migrate + seed before handing off to CMD
+# Override CMD per-role in Kamal config (e.g. worker: ["node", "dist/worker.js"])
+ENTRYPOINT ["entrypoint.sh"]
 CMD ["node", "dist/server.js"]
