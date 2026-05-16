@@ -11,7 +11,8 @@ import { WelcomeOtpStep } from "@/components/welcome/WelcomeOtpStep";
 import { toastError } from "@/lib/toastUtils";
 import { sendOTP } from "@/lib/welcome/api";
 import { useRef } from "react";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const STEP_COMPONENTS: Record<string, React.ReactNode> = {
   phone: <WelcomePhoneStep />,
@@ -24,6 +25,8 @@ export function WelcomeForm() {
     defaultValues: { phone: "", otp: "" },
     mode: "onTouched",
   });
+
+  const router = useRouter()
 
   const stepData = useRef<Record<string, unknown>>({});
 
@@ -41,10 +44,10 @@ export function WelcomeForm() {
         };
       try {
         const response = await sendOTP({ phone: data.phone });
-        
+
         // Store data
         stepData.current[stepId] = response;
-        return { ok: true }
+        return { ok: true };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         toastError(message);
@@ -68,6 +71,19 @@ export function WelcomeForm() {
       redirect: false,
     });
     // TODO: POST /api/auth/login
+
+    if (res?.error) {
+      toastError(res.error || "Login failed")
+      return;
+    }
+
+    const session = await getSession();
+
+    if (!session?.user.bvnVerified) {
+      router.push("/onboarding");
+    } else {
+      router.push("/");
+    }
   }
 
   return (

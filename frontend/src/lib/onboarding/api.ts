@@ -20,6 +20,14 @@ export interface VerifyBVNSuccess {
   user: User;
 }
 
+export interface BettingUploadSuccess {
+  success: true;
+  dataSourceId: string;
+  ingestionSessionId: string;
+  extractionJobId: string;
+  filesUploaded: number;
+}
+
 export async function InitiateBVNRequest(
   data: Pick<ProofidentFormData, "bvn">,
   accessToken: string,
@@ -28,7 +36,7 @@ export async function InitiateBVNRequest(
   const res = await fetch(`${NEXT_PUBLIC_API_URL}/auth/bvn/initiate`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
       "Idempotency-Key": `bvn-initiate-${reqId}`,
     },
@@ -37,7 +45,9 @@ export async function InitiateBVNRequest(
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(body?.error || body?.message || "BVN Initiation request failed");
+    throw new Error(
+      body?.error || body?.message || "BVN Initiation request failed",
+    );
   }
 
   const body = await res.json();
@@ -77,4 +87,42 @@ export async function verifyBVN(
   const body = await res.json();
 
   return body as VerifyBVNSuccess;
+}
+
+export type BettingUploadKind = "screenshot" | "csv";
+
+export async function uploadBettingFiles(
+  providerCode: string,
+  files: File[],
+  accessToken: string,
+  uploadKind: BettingUploadKind = "screenshot",
+): Promise<void> {
+  const formData = new FormData();
+
+  formData.append("providerCode", providerCode);
+  formData.append("uploadKind", uploadKind);
+  files.forEach((file) => formData.append("file", file));
+
+  const res = await fetch(
+    `${NEXT_PUBLIC_API_URL}/me/data-sources/betting/upload`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        // Do NOT set Content-Type here — the browser sets it automatically
+        // with the correct multipart boundary when using FormData
+      },
+      body: formData,
+    },
+  );
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(
+      body?.error || body?.message || "Betting file upload failed",
+    );
+  }
+
+  const body = await res.json();
+  return body;
 }

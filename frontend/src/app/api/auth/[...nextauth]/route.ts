@@ -11,6 +11,7 @@ declare module "next-auth" {
     accessToken: string;
     refreshToken: string;
     accessTokenExpires: number;
+    bvnVerified: boolean;
   }
 
   interface Session {
@@ -21,6 +22,7 @@ declare module "next-auth" {
       name: string | null;
       email: string | null;
       phone: string;
+      bvnVerified: boolean;
     };
   }
 }
@@ -35,6 +37,7 @@ declare module "next-auth/jwt" {
       name: string | null;
       email: string | null;
       phone: string;
+      bvnVerified: boolean;
     };
     error?: string;
   }
@@ -143,18 +146,14 @@ export const authOptions: NextAuthOptions = {
         const result = (await res.json()) as LoginResponse;
         console.log("b", result);
         const { accessToken, refreshToken, user: userData } = result;
-        try {
-          const decoded = jwtDecode<{ exp: number }>(accessToken);
-          console.log(decoded);
-        } catch (err) {
-          console.error("JWT decode failed", err);
-        }
-        // console.log("Passed decoding", new Date(decoded.exp));
+        const decoded = jwtDecode<{ exp: number }>(accessToken);
+
         return {
           id: userData.id,
           name: userData.name,
           email: userData.email,
           phone: userData.phone,
+          bvnVerified: userData.bvnVerified,
           accessToken,
           refreshToken,
           accessTokenExpires: decoded.exp * 1000,
@@ -179,11 +178,12 @@ export const authOptions: NextAuthOptions = {
             name: user.name as string | null,
             email: user.email as string | null,
             phone: user.phone,
+            bvnVerified: user.bvnVerified,
           },
         };
       }
 
-      console.log("I ran")
+      console.log("I ran");
 
       // Check if token is still valid
       if (Date.now() < token.accessTokenExpires) {

@@ -55,58 +55,58 @@ export function OnboardingForm() {
     data: Partial<ProofidentFormData>,
   ) {
     if (!session?.accessToken) {
-      // toastError("User is not authenticated");
-      // return {
-      //   ok: false,
-      //   message: "User has to be authenticated",
-      // };
+      toastError("User is not authenticated");
+      return {
+        ok: false,
+        message: "User has to be authenticated",
+      };
     }
     await new Promise((r) => setTimeout(r, 600));
 
     switch (stepId) {
       case "bvn":
-        // if (!data.bvn)
-        //   return {
-        //     ok: false,
-        //     field: "bvn",
-        //     message: "BVN is required",
-        //   };
-
-        // try {
-        //   const response = await InitiateBVNRequest(
-        //     {
-        //       bvn: data.bvn,
-        //     },
-        //     session?.accessToken,
-        //   );
-
-        //   // Store data
-        //   stepData.current[stepId] = response;
-        //   return { ok: true };
-        // } catch (err) {}
-        return { ok: true };
-      case "bvn-verification":
-        // const bvn = form.getValues("bvn");
-        // if (!data.bvnOtp || !bvn || !data.dateOfBirth)
-        //   return {
-        //     ok: false,
-        //     field: "bvnOtp",
-        //     message: "OTP is required",
-        //   };
+        if (!data.bvn)
+          return {
+            ok: false,
+            field: "bvn",
+            message: "BVN is required",
+          };
 
         try {
-        //   const response = await verifyBVN(
-        //     {
-        //       bvn,
-        //       bvnOtp: data.bvnOtp,
-        //       dateOfBirth: data.dateOfBirth,
-        //     },
-        //     session?.accessToken,
-        //     (stepData.current["bvn"] as InitiateBVNRequestSuccess).sessionId,
-        //   );
+          const response = await InitiateBVNRequest(
+            {
+              bvn: data.bvn,
+            },
+            session?.accessToken,
+          );
 
-        //   // Store data
-        //   stepData.current[stepId] = response;
+          // Store data
+          stepData.current[stepId] = response;
+          return { ok: true };
+        } catch (err) {}
+        return { ok: true };
+      case "bvn-verification":
+        const bvn = form.getValues("bvn");
+        if (!data.bvnOtp || !bvn || !data.dateOfBirth)
+          return {
+            ok: false,
+            field: "bvnOtp",
+            message: "OTP is required",
+          };
+
+        try {
+          const response = await verifyBVN(
+            {
+              bvn,
+              bvnOtp: data.bvnOtp,
+              dateOfBirth: data.dateOfBirth,
+            },
+            session?.accessToken,
+            (stepData.current["bvn"] as InitiateBVNRequestSuccess).sessionId,
+          );
+
+          // Store data
+          stepData.current[stepId] = response;
           return { ok: true };
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
