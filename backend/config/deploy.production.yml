@@ -33,7 +33,7 @@ servers:
 
 env:
   clear:
-    NODE_ENV: production
+    NODE_ENV: developement
     PORT: "3000"
     # Workers run in the dedicated worker container, not inline in the API process
     RUN_INLINE_QUEUE_WORKERS: "false"
