@@ -89,8 +89,21 @@ export const NIGERIAN_STATES = [
   "Zamfara",
 ];
  
+export type Institution = {
+  id: string;
+  label: string;
+  description: string;
+  stars: number;
+  image: string;
+  badge: string | null;
+};
 
-export const DATA_SOURCES = [
+export type DataSourceCategory = {
+  category: string;
+  institutions: Institution[];
+};
+
+export const DATA_SOURCES: DataSourceCategory[] = [
   {
     category: "betting platforms",
     institutions: [
