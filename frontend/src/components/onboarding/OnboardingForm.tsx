@@ -18,8 +18,9 @@ import {
   verifyBVN,
 } from "@/lib/onboarding/api";
 import { useSession } from "next-auth/react";
-import { toastError } from "@/lib/toastUtils";
+import { toastError, toastSuccess } from "@/lib/toastUtils";
 import { useRef } from "react";
+import { useRouter } from "next/navigation";
 
 const STEP_COMPONENTS: Record<string, React.ReactNode> = {
   welcome: <WelcomeScreen />,
@@ -31,6 +32,7 @@ const STEP_COMPONENTS: Record<string, React.ReactNode> = {
 
 export function OnboardingForm() {
   const { data: session } = useSession();
+  const router = useRouter()
   // Consumer owns useForm — no type fights in MultiStepForm
   const form = useForm<ProofidentFormData>({
     resolver: zodResolver(proofidentSchema),
@@ -131,8 +133,8 @@ export function OnboardingForm() {
 
   async function handleComplete(data: ProofidentFormData) {
     await new Promise((r) => setTimeout(r, 1200));
-    console.log("[submit] Full validated form data:", data);
-    alert("Onboarding complete!");
+    toastSuccess("Onboarding completed successfully")
+    router.push("/")
   }
 
   return (
