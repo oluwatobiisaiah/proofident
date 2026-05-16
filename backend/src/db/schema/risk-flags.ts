@@ -1,12 +1,12 @@
 import { pgTable, index } from "drizzle-orm/pg-core";
-import { createdAtColumn, idColumn, jsonb, riskSeverityEnum, riskStatusEnum, text, timestamp, varchar } from "./shared.js";
+import { createdAtColumn, idColumn, jsonb, riskSeverityEnum, riskStatusEnum, text, timestamp, uuid, varchar } from "./shared.js";
 import { users } from "./users.js";
 
 export const riskFlags = pgTable(
   "risk_flags",
   {
     id: idColumn,
-    userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     source: varchar("source", { length: 50 }).notNull(),
     flagType: varchar("flag_type", { length: 100 }).notNull(),
     severity: riskSeverityEnum("severity").notNull(),

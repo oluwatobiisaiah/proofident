@@ -1,12 +1,13 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { env } from "../config/env.js";
 import { squadService } from "../services/squad.service.js";
 import { webhookProcessorService } from "../services/webhook-processor.service.js";
 
 export const webhookRoutes: FastifyPluginAsync = async (app) => {
   app.post("/webhooks/squad", async (request, reply) => {
-    const signature = request.headers["x-squad-signature"];
-    const rawPayload = JSON.stringify(request.body ?? {});
+    const signature = request.headers["x-squad-encrypted-body"];
+    const rawPayload = request.rawBody ?? JSON.stringify(request.body ?? {});
 
     if (!squadService.verifyWebhookSignature(
       typeof signature === "string" ? signature : undefined,
@@ -31,6 +32,10 @@ export const webhookRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post("/demo/events/:type", async (request, reply) => {
+    if (env.NODE_ENV === "production") {
+      return reply.status(404).send({ error: "Not found" });
+    }
+
     const params = request.params as { type: string };
     const body = z.object({
       userId: z.uuid(),

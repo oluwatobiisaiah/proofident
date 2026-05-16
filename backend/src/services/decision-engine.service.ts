@@ -13,6 +13,7 @@ import {
   users
 } from "../db/schema/index.js";
 import { AppError } from "../utils/app-error.js";
+import { nairaToKobo } from "../utils/money.js";
 
 type Trait = {
   key: string;
@@ -175,10 +176,10 @@ function computeBaseScore(args: {
     }
   }
 
-  if (avgBalance >= 25000) {
+  if (avgBalance >= nairaToKobo(25000)) {
     score += 18;
     positives.push("Wallet balances show some liquidity cushion.");
-  } else if (avgBalance < 8000) {
+  } else if (avgBalance < nairaToKobo(8000)) {
     score -= 18;
     negatives.push("Wallet balance often runs low, reducing repayment comfort.");
   }
@@ -209,7 +210,7 @@ function computeBaseScore(args: {
     negatives.push("Missed or failed repayments reduce trust.");
   }
 
-  if (args.declaredIncome <= 50000 && args.completenessTier === "tier_3") {
+  if (args.declaredIncome <= nairaToKobo(50000) && args.completenessTier === "tier_3") {
     score -= 10;
     negatives.push("Low declared income plus sparse evidence keeps the profile conservative.");
   }
@@ -223,14 +224,14 @@ function computeBaseScore(args: {
 
 function recommendedLoanLimitFor(score: number, confidence: number, tier: string) {
   let limit = 0;
-  if (score >= 750) limit = 500000;
-  else if (score >= 650) limit = 200000;
-  else if (score >= 550) limit = 100000;
-  else limit = 50000;
+  if (score >= 750) limit = nairaToKobo(500000);
+  else if (score >= 650) limit = nairaToKobo(200000);
+  else if (score >= 550) limit = nairaToKobo(100000);
+  else limit = nairaToKobo(50000);
 
-  if (tier === "tier_2") limit = Math.min(limit, 100000);
-  if (tier === "tier_3") limit = Math.min(limit, 25000);
-  if (confidence < 0.6) limit = Math.min(limit, 25000);
+  if (tier === "tier_2") limit = Math.min(limit, nairaToKobo(100000));
+  if (tier === "tier_3") limit = Math.min(limit, nairaToKobo(25000));
+  if (confidence < 0.6) limit = Math.min(limit, nairaToKobo(25000));
   return limit;
 }
 
@@ -248,9 +249,7 @@ export const decisionEngineService = {
       db.query.bettingData.findMany({ where: eq(bettingData.userId, userId) }),
       db.query.mobileMoneyTransactions.findMany({ where: eq(mobileMoneyTransactions.userId, userId) }),
       db.query.loanRepayments.findMany({
-        where: inArray(loanRepayments.loanId, (
-          await db.query.loans.findMany({ where: eq(loans.userId, userId) })
-        ).map((loan) => loan.id))
+        where: inArray(loanRepayments.loanId, db.select({ id: loans.id }).from(loans).where(eq(loans.userId, userId)))
       }),
       db.query.dataSources.findMany({ where: eq(dataSources.userId, userId) })
     ]);
@@ -334,9 +333,9 @@ export const decisionEngineService = {
     }
 
     const traits = Array.isArray(score.transferableTraits) ? score.transferableTraits as Trait[] : [];
-    const discipline = traits.find((trait) => trait.key === "discipline")?.score ?? 45;
-    const commercial = traits.find((trait) => trait.key === "commercial")?.score ?? 45;
-    const reliability = traits.find((trait) => trait.key === "reliability")?.score ?? 45;
+    const discipline = traits.find((trait) => trait.key === "discipline")?.score ?? 0;
+    const commercial = traits.find((trait) => trait.key === "commercial")?.score ?? 0;
+    const reliability = traits.find((trait) => trait.key === "reliability")?.score ?? 0;
 
     await db.delete(jobMatches).where(eq(jobMatches.userId, userId));
 

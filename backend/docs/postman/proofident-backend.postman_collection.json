@@ -1,0 +1,911 @@
+{
+  "info": {
+    "_postman_id": "b232bf69-2698-4998-bdd6-b575b77fa2f5",
+    "name": "Proofident Backend API",
+    "description": "Comprehensive Postman collection for the Proofident Node backend. Import together with the `Proofident Local` environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Returns backend availability plus database and Redis health checks."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/send-otp",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"08012345678\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/send-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "send-otp"]
+            },
+            "description": "Requests an OTP. In dev mode the response includes `devOtp` — copy it directly into verify-otp."
+          }
+        },
+        {
+          "name": "POST /auth/verify-otp",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) pm.environment.set('accessToken', json.accessToken);",
+                  "if (json.refreshToken) pm.environment.set('refreshToken', json.refreshToken);",
+                  "if (json.user && json.user.id) pm.environment.set('userId', json.user.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"08012345678\",\n  \"otp\": \"PASTE_DEV_OTP_HERE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "verify-otp"]
+            },
+            "description": "Verifies OTP and stores `accessToken`, `refreshToken`, and `userId` in the active environment."
+          }
+        },
+        {
+          "name": "POST /auth/bvn/initiate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.sessionId) pm.environment.set('bvnSessionId', json.sessionId);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bvn\": \"12345678901\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/bvn/initiate",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "bvn", "initiate"]
+            },
+            "description": "Starts BVN verification for the authenticated user."
+          }
+        },
+        {
+          "name": "POST /auth/verify-bvn",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{bvnSessionId}}\",\n  \"otp\": \"123456\",\n  \"method\": \"sms\",\n  \"dateOfBirth\": \"1995-01-31\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-bvn",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "verify-bvn"]
+            },
+            "description": "Completes BVN verification."
+          }
+        },
+        {
+          "name": "POST /auth/refresh-token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) pm.environment.set('accessToken', json.accessToken);",
+                  "if (json.refreshToken) pm.environment.set('refreshToken', json.refreshToken);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh-token"]
+            },
+            "description": "Issues a fresh access token and replacement refresh token."
+          }
+        },
+        {
+          "name": "POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Revokes the supplied refresh token session."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "GET /me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["me"]
+            }
+          }
+        },
+        {
+          "name": "GET /me/timeline",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/timeline",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "timeline"]
+            }
+          }
+        },
+        {
+          "name": "GET /me/risk-flags",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/risk-flags",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "risk-flags"]
+            }
+          }
+        },
+        {
+          "name": "GET /me/data-sources",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/virtual-account",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/virtual-account",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "virtual-account"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/uploads/presign",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceType\": \"betting\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me/uploads/presign",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "uploads", "presign"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/ingestions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.ingestion && json.ingestion.id) pm.environment.set('ingestionId', json.ingestion.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceType\": \"betting\",\n  \"ingestionMethod\": \"manual_upload\",\n  \"dataSourceId\": \"{{dataSourceId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me/ingestions",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "ingestions"]
+            }
+          }
+        },
+        {
+          "name": "GET /ingestions/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ingestions/{{ingestionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ingestions", "{{ingestionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Betting Ingestion",
+      "item": [
+        {
+          "name": "GET /me/data-sources/betting/providers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/betting/providers",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "betting", "providers"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/data-sources/betting/upload-sessions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.ingestionSessionId) pm.environment.set('ingestionSessionId', json.ingestionSessionId);",
+                  "if (json.dataSourceId) pm.environment.set('dataSourceId', json.dataSourceId);",
+                  "if (json.uploads && json.uploads[0] && json.uploads[0].uploadFileId) pm.environment.set('uploadFileId', json.uploads[0].uploadFileId);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerCode\": \"1xbet\",\n  \"uploadKind\": \"csv\",\n  \"files\": [\n    {\n      \"originalFilename\": \"history.csv\",\n      \"mimeType\": \"text/csv\",\n      \"fileSizeBytes\": 20480,\n      \"checksumSha256\": \"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\n      \"uploadOrder\": 0\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/betting/upload-sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "betting", "upload-sessions"]
+            },
+            "description": "Creates a staged upload session and returns Cloudinary upload intents."
+          }
+        },
+        {
+          "name": "POST /me/data-sources/betting/upload-sessions/:ingestionSessionId/complete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.extractionJobId) pm.environment.set('extractionJobId', json.extractionJobId);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"files\": [\n    {\n      \"uploadFileId\": \"{{uploadFileId}}\",\n      \"publicUrl\": \"https://res.cloudinary.com/demo/raw/upload/v1/proofident/history.csv\",\n      \"storageObjectKey\": \"proofident/history.csv\",\n      \"mimeType\": \"text/csv\",\n      \"fileSizeBytes\": 20480\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/betting/upload-sessions/{{ingestionSessionId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "betting", "upload-sessions", "{{ingestionSessionId}}", "complete"]
+            },
+            "description": "Marks uploaded files as complete and queues the ML extraction job."
+          }
+        },
+        {
+          "name": "GET /me/data-sources/betting/ingestions/:ingestionSessionId/review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.records && json.records[0] && json.records[0].id) pm.environment.set('stagedRecordId', json.records[0].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/betting/ingestions/{{ingestionSessionId}}/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "betting", "ingestions", "{{ingestionSessionId}}", "review"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/data-sources/betting/ingestions/:ingestionSessionId/review/records/:stagedRecordId",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"edit\",\n  \"patch\": {\n    \"transactionDate\": \"2026-05-14T09:15:00.000Z\",\n    \"betAmount\": 1500,\n    \"odds\": 2.4,\n    \"outcome\": \"win\",\n    \"payoutAmount\": 3600,\n    \"betType\": \"Accumulator\",\n    \"league\": \"Premier League\",\n    \"eventName\": \"Arsenal vs Chelsea\"\n  },\n  \"notes\": \"Adjusted OCR output after review\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/betting/ingestions/{{ingestionSessionId}}/review/records/{{stagedRecordId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "betting", "ingestions", "{{ingestionSessionId}}", "review", "records", "{{stagedRecordId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/data-sources/betting/ingestions/:ingestionSessionId/review/bulk-confirm",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stagedRecordIds\": [\n    \"{{stagedRecordId}}\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/betting/ingestions/{{ingestionSessionId}}/review/bulk-confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "betting", "ingestions", "{{ingestionSessionId}}", "review", "bulk-confirm"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/data-sources/betting/ingestions/:ingestionSessionId/finalize",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/betting/ingestions/{{ingestionSessionId}}/finalize",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "betting", "ingestions", "{{ingestionSessionId}}", "finalize"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Data Sources",
+      "item": [
+        {
+          "name": "POST /me/data-sources/connect/initiate",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceType\": \"mobile_money\",\n  \"providerCode\": \"opay\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/connect/initiate",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "connect", "initiate"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/data-sources/connect/complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceType\": \"mobile_money\",\n  \"providerCode\": \"opay\",\n  \"code\": \"mono-link-code\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/connect/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "connect", "complete"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/data-sources/imports/betting/provider",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerCode\": \"1xbet\",\n  \"format\": \"json\",\n  \"payload\": [\n    {\n      \"betId\": \"ABC123\",\n      \"amount\": 1500,\n      \"odds\": 2.4,\n      \"outcome\": \"win\",\n      \"transactionDate\": \"2026-05-14T09:15:00.000Z\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/imports/betting/provider",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "imports", "betting", "provider"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/data-sources/manual-import/betting",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerCode\": \"1xbet\",\n  \"records\": [\n    {\n      \"externalBetId\": \"ABC123\",\n      \"providerReference\": \"ticket-001\",\n      \"transactionDate\": \"2026-05-14T09:15:00.000Z\",\n      \"settledAt\": \"2026-05-14T10:00:00.000Z\",\n      \"amount\": 1500,\n      \"odds\": 2.4,\n      \"outcome\": \"win\",\n      \"payout\": 3600,\n      \"betType\": \"Accumulator\",\n      \"league\": \"Premier League\",\n      \"rawPayload\": {}\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/manual-import/betting",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "manual-import", "betting"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/data-sources/manual-import/mobile-money",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providerCode\": \"opay\",\n  \"records\": [\n    {\n      \"externalTransactionId\": \"TXN123\",\n      \"providerReference\": \"ref-001\",\n      \"transactionDate\": \"2026-05-14T09:15:00.000Z\",\n      \"transactionType\": \"credit\",\n      \"transactionStatus\": \"successful\",\n      \"amount\": 25000,\n      \"balanceAfter\": 88000,\n      \"currency\": \"NGN\",\n      \"channel\": \"wallet\",\n      \"counterpartyName\": \"Proofident Test\",\n      \"description\": \"Salary payment\",\n      \"rawPayload\": {}\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/manual-import/mobile-money",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "manual-import", "mobile-money"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/data-sources/:sourceId/sync",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/{{sourceId}}/sync",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "{{sourceId}}", "sync"]
+            }
+          }
+        },
+        {
+          "name": "GET /me/data-sources/:sourceId/ingestion",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/data-sources/{{sourceId}}/ingestion",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "data-sources", "{{sourceId}}", "ingestion"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scores",
+      "item": [
+        {
+          "name": "GET /me/score",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/score",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "score"]
+            }
+          }
+        },
+        {
+          "name": "GET /me/score/status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/score/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "score", "status"]
+            }
+          }
+        },
+        {
+          "name": "POST /me/score/recalculate",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/score/recalculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "score", "recalculate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "GET /me/jobs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "jobs"]
+            }
+          }
+        },
+        {
+          "name": "GET /me/applications",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/applications",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "applications"]
+            }
+          }
+        },
+        {
+          "name": "GET /jobs/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "{{jobId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /jobs/:id/apply",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"needsLoan\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobId}}/apply",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "{{jobId}}", "apply"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Loans",
+      "item": [
+        {
+          "name": "GET /me/loan-offers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/loan-offers",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "loan-offers"]
+            }
+          }
+        },
+        {
+          "name": "POST /loans/apply",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobId\": \"{{jobId}}\",\n  \"requestedAmount\": 200000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/loans/apply",
+              "host": ["{{baseUrl}}"],
+              "path": ["loans", "apply"]
+            }
+          }
+        },
+        {
+          "name": "GET /me/loans",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/loans",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "loans"]
+            }
+          }
+        },
+        {
+          "name": "GET /me/income",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/income",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "income"]
+            }
+          }
+        },
+        {
+          "name": "GET /loans/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/loans/{{loanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["loans", "{{loanId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "POST /webhooks/squad",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-squad-signature", "value": "replace-with-real-signature" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"evt_123\",\n  \"type\": \"virtual_account.deposit.success\",\n  \"data\": {\n    \"amount\": 10000\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/squad",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "squad"]
+            },
+            "description": "Signature-verified Squad webhook receiver."
+          }
+        },
+        {
+          "name": "POST /demo/events/:type",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"loanId\": \"{{loanId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/demo/events/loan.repayment.received",
+              "host": ["{{baseUrl}}"],
+              "path": ["demo", "events", "loan.repayment.received"]
+            },
+            "description": "Non-production helper route for replaying canonical events."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Demo",
+      "item": [
+        {
+          "name": "POST /demo/bootstrap",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Idempotency-Key", "value": "{{$randomUUID}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/demo/bootstrap",
+              "host": ["{{baseUrl}}"],
+              "path": ["demo", "bootstrap"]
+            },
+            "description": "Registered only when `ENABLE_DEMO_ROUTES=true` and the backend is not running in production."
+          }
+        },
+        {
+          "name": "GET /demo/users/:id/snapshot",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/demo/users/{{demoUserId}}/snapshot",
+              "host": ["{{baseUrl}}"],
+              "path": ["demo", "users", "{{demoUserId}}", "snapshot"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

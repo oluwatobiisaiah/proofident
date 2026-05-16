@@ -1,0 +1,78 @@
+service: proofident-backend
+image: oluwatobiisaiah/proofident-backend
+primary_role: api
+
+registry:
+  server: ghcr.io
+  username: <%= ENV["GITHUB_ACTOR"] %>
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+servers:
+  api:
+    hosts:
+      - <%= ENV["SERVER_IP"] %>
+    cmd: node dist/server.js
+    options:
+      memory: 512m
+    proxy:
+      ssl: true
+      host: api.proofident.idylabs.com
+      app_port: 3000
+      healthcheck:
+        path: /health
+        interval: 10
+        timeout: 5
+
+  worker:
+    hosts:
+      - <%= ENV["SERVER_IP"] %>
+    cmd: node dist/worker.js
+    options:
+      memory: 256m
+
+env:
+  clear:
+    NODE_ENV: production
+    PORT: "3000"
+    # Workers run in the dedicated worker container, not inline in the API process
+    RUN_INLINE_QUEUE_WORKERS: "false"
+    JWT_ISSUER: proofident
+    LOG_LEVEL: info
+    DB_POOL_MAX: "10"
+    REQUEST_TIMEOUT_MS: "15000"
+    OTP_TTL_MINUTES: "5"
+    OTP_MAX_ATTEMPTS: "5"
+    OTP_RESEND_COOLDOWN_SECONDS: "45"
+    SMS_PROVIDER: squad
+    SQUAD_BASE_URL: https://sandbox-api-d.squadco.com
+    SQUAD_DEFAULT_BANK_CODE: "058"
+    SQUAD_SMS_SENDER_ID: PROOFID
+    MONO_BASE_URL: https://api.withmono.com
+    MONO_REALTIME_TRANSACTIONS: "true"
+    CLOUDINARY_UPLOAD_FOLDER: proofident
+    FILE_UPLOAD_DIR: /app/uploads
+    # ML service — no bearer token auth; ML runs with API_KEY="" (auth disabled)
+    AI_SERVICE_URL: https://ml.proofident.idylabs.com
+  secret:
+    - DATABASE_URL
+    - REDIS_URL
+    - JWT_SECRET
+    - ENCRYPTION_SECRET
+    - ALLOWED_ORIGINS
+    - CLOUDINARY_CLOUD_NAME
+    - CLOUDINARY_API_KEY
+    - CLOUDINARY_API_SECRET
+    - MONO_SECRET_KEY
+    - MONO_REDIRECT_URL
+    - SQUAD_SECRET_KEY
+    - SQUAD_MERCHANT_ID
+
+deploy_timeout: 300
+retain_containers: 1
+
+ssh:
+  user: deploy
+
+builder:
+  arch: amd64

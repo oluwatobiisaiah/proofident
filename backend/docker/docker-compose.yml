@@ -1,0 +1,45 @@
+version: "3.9"
+
+# Local development infrastructure only.
+# Run the backend and ML processes directly on your machine.
+# This stack only provides the shared services they actually depend on:
+# - PostgreSQL for application data
+# - Redis for BullMQ queues and rate limiting
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: proofident-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: proofident
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d proofident"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: proofident-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,120 @@
+[
+  {
+    "job_id": "job_kwik_rider_lagos",
+    "title": "Delivery Rider",
+    "employer": "Kwik Delivery",
+    "category": "logistics",
+    "location_state": "Lagos",
+    "min_income": 12000000,
+    "max_income": 18000000,
+    "startup_cost": 8500000,
+    "startup_cost_breakdown": {
+      "bike_deposit": 8500000
+    },
+    "min_credit_score": 550,
+    "required_skills": {
+      "discipline": 0.7,
+      "reliability": 0.65
+    },
+    "required_items": [
+      "smartphone"
+    ],
+    "employment_type": "gig",
+    "min_age": 21,
+    "max_age": 40
+  },
+  {
+    "job_id": "job_gig_logistics_lagos",
+    "title": "GIG Logistics Rider",
+    "employer": "GIG Logistics",
+    "category": "logistics",
+    "location_state": "Lagos",
+    "min_income": 10000000,
+    "max_income": 16000000,
+    "startup_cost": 7500000,
+    "startup_cost_breakdown": {
+      "bike_deposit": 7500000
+    },
+    "min_credit_score": 500,
+    "required_skills": {
+      "discipline": 0.6,
+      "reliability": 0.6
+    },
+    "required_items": [
+      "smartphone"
+    ],
+    "employment_type": "gig",
+    "min_age": 21,
+    "max_age": 45
+  },
+  {
+    "job_id": "job_jumia_sales_kano",
+    "title": "Field Sales Representative",
+    "employer": "Jumia Nigeria",
+    "category": "sales",
+    "location_state": "Kano",
+    "min_income": 9000000,
+    "max_income": 15000000,
+    "startup_cost": 3000000,
+    "startup_cost_breakdown": {
+      "sales_kit": 3000000
+    },
+    "min_credit_score": 480,
+    "required_skills": {
+      "customer_service": 0.6,
+      "discipline": 0.5
+    },
+    "required_items": [
+      "smartphone"
+    ],
+    "employment_type": "gig",
+    "min_age": 20,
+    "max_age": 45
+  },
+  {
+    "job_id": "job_palmpay_agent_nationwide",
+    "title": "PalmPay Agent",
+    "employer": "PalmPay",
+    "category": "sales",
+    "location_state": "Nationwide",
+    "min_income": 8000000,
+    "max_income": 13000000,
+    "startup_cost": 5000000,
+    "startup_cost_breakdown": {
+      "pos_terminal": 5000000
+    },
+    "min_credit_score": 500,
+    "required_skills": {
+      "customer_service": 0.55,
+      "reliability": 0.6
+    },
+    "required_items": [
+      "smartphone"
+    ],
+    "employment_type": "gig",
+    "min_age": 20,
+    "max_age": 50
+  },
+  {
+    "job_id": "job_remote_support_nationwide",
+    "title": "Remote Customer Support",
+    "employer": "TechSupport NG",
+    "category": "tech",
+    "location_state": "Nationwide",
+    "min_income": 10000000,
+    "max_income": 18000000,
+    "startup_cost": 0,
+    "startup_cost_breakdown": {},
+    "min_credit_score": 450,
+    "required_skills": {
+      "customer_service": 0.6,
+      "analytical": 0.5
+    },
+    "required_items": [
+      "smartphone"
+    ],
+    "employment_type": "full_time",
+    "min_age": 18,
+    "max_age": 55
+  }
+]

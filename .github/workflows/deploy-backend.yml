@@ -1,0 +1,152 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/oluwatobiisaiah/proofident-backend
+
+jobs:
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm typecheck
+
+  build-and-push:
+    name: Build & push image
+    runs-on: ubuntu-latest
+    needs: typecheck
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            type=raw,value=${{ github.sha }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            service=proofident-backend
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment:
+      name: production
+      url: https://api.proofident.idylabs.com
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Kamal
+        run: sudo gem install kamal --version '~> 2.0'
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          cat > ~/.ssh/config <<EOF
+          Host *
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            IdentityFile ~/.ssh/id_ed25519
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Write Kamal secrets
+        run: |
+          mkdir -p .kamal
+          cat > .kamal/secrets <<'EOF'
+          KAMAL_REGISTRY_PASSWORD=${{ secrets.KAMAL_REGISTRY_PASSWORD }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          REDIS_URL=${{ secrets.REDIS_URL }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          ENCRYPTION_SECRET=${{ secrets.ENCRYPTION_SECRET }}
+          ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
+          CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+          MONO_SECRET_KEY=${{ secrets.MONO_SECRET_KEY }}
+          MONO_REDIRECT_URL=${{ secrets.MONO_REDIRECT_URL }}
+          SQUAD_SECRET_KEY=${{ secrets.SQUAD_SECRET_KEY }}
+          SQUAD_MERCHANT_ID=${{ secrets.SQUAD_MERCHANT_ID }}
+          EOF
+
+      - name: Deploy
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: kamal deploy --skip-push --config-file config/deploy.production.yml
+
+      - name: Run database migrations
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          kamal app exec --reuse \
+            --config-file config/deploy.production.yml \
+            --roles api \
+            "node dist/migrate.js"
+
+      - name: Health check
+        run: |
+          sleep 10
+          curl --fail --retry 5 --retry-delay 5 \
+            https://api.proofident.idylabs.com/health

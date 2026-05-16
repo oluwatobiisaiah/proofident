@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mono Connect — Dev Test</title>
+  <style>
+    body { font-family: monospace; max-width: 640px; margin: 40px auto; padding: 0 20px; }
+    input, select { width: 100%; padding: 8px; margin: 6px 0 14px; box-sizing: border-box; font-family: monospace; }
+    button { padding: 10px 20px; cursor: pointer; font-size: 14px; margin-right: 8px; margin-bottom: 8px; }
+    pre { background: #f4f4f4; padding: 14px; white-space: pre-wrap; word-break: break-all; min-height: 40px; }
+    .success { color: green; } .error { color: red; } .info { color: #555; }
+  </style>
+</head>
+<body>
+  <h2>Mono Connect — Dev Test</h2>
+
+  <label>Backend base URL</label>
+  <input id="apiBase" value="http://localhost:3000" />
+
+  <label>Access Token (without "Bearer")</label>
+  <input id="token" type="text" placeholder="eyJ..." />
+
+  <label>Mono Public Key</label>
+  <input id="pubkey" value="test_pk_flwrl5zb7aapt18udx2n" />
+
+  <label>Provider Code</label>
+  <select id="provider">
+    <option value="opay">OPay</option>
+    <option value="palmpay">PalmPay</option>
+    <option value="moniepoint">Moniepoint</option>
+    <option value="kuda">Kuda</option>
+    <option value="sterling">Sterling</option>
+  </select>
+
+  <!-- Local copy of @mono.co/connect.js (from connect.mono.co/v2/connect.js) -->
+  <script src="./connect.js"></script>
+
+  <br>
+  <button id="linkBtn">Link Account</button>
+
+  <h3>Log</h3>
+  <pre id="log" class="info">Fill in token and click Link Account.</pre>
+
+  <script>
+    // The UMD bundle exports under this key
+    var SDK = window['@mono.co/connect.js'];
+
+    if (!SDK) {
+      document.getElementById('log').textContent = 'SDK failed to load — check that connect.js exists in same folder.';
+      document.getElementById('log').className = 'error';
+    }
+
+    function log(msg, cls) {
+      var el = document.getElementById('log');
+      el.className = cls || 'info';
+      el.textContent = typeof msg === 'object' ? JSON.stringify(msg, null, 2) : String(msg);
+    }
+
+    document.getElementById('linkBtn').addEventListener('click', function () {
+      if (!SDK) { log('SDK not loaded.', 'error'); return; }
+
+      var apiBase      = document.getElementById('apiBase').value.trim();
+      var token        = document.getElementById('token').value.trim();
+      var pubkey       = document.getElementById('pubkey').value.trim();
+      var providerCode = document.getElementById('provider').value;
+
+      if (!token) { log('Paste your access token first.', 'error'); return; }
+
+      log('Opening Mono widget...');
+
+      var connect = new SDK({
+        key: pubkey,
+        onSuccess: function (payload) {
+          var code = payload.code;
+          log('Got code: ' + code + '\n\nPosting to /me/data-sources/connect/complete...');
+          fetch(apiBase + '/me/data-sources/connect/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({
+              sourceType: 'mobile_money',
+              providerCode: providerCode,
+              code: code
+            })
+          })
+          .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, data: d }; }); })
+          .then(function (r) { log(r.data, r.ok ? 'success' : 'error'); })
+          .catch(function (e) { log('Complete failed: ' + e.message, 'error'); });
+        },
+        onClose: function () { log('Widget closed.'); }
+      });
+
+      connect.setup();
+      connect.open();
+    });
+  </script>
+</body>
+</html>

@@ -24,4 +24,13 @@ Thumbs.db
 .idea/
 *.swp
 
+# Kamal secrets — written by CI, never committed
+.kamal/secrets
+.kamal/secrets-common
+
+# ML service
+ml/.venv
+ml/**/__pycache__/
+ml/**/*.py[cod]
 plans
+.claude

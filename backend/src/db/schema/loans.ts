@@ -1,5 +1,5 @@
 import { pgTable, index } from "drizzle-orm/pg-core";
-import { createdAtColumn, idColumn, integer, jsonb, loanStatusEnum, timestamp, updatedAtColumn, varchar } from "./shared.js";
+import { createdAtColumn, idColumn, integer, jsonb, loanStatusEnum, timestamp, updatedAtColumn, uuid, varchar } from "./shared.js";
 import { users } from "./users.js";
 import { jobs } from "./jobs.js";
 import { jobApplications } from "./job-applications.js";
@@ -8,9 +8,9 @@ export const loans = pgTable(
   "loans",
   {
     id: idColumn,
-    userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
-    jobId: varchar("job_id", { length: 36 }).references(() => jobs.id, { onDelete: "set null" }),
-    jobApplicationId: varchar("job_application_id", { length: 36 }).references(() => jobApplications.id, { onDelete: "set null" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    jobId: uuid("job_id").references(() => jobs.id, { onDelete: "set null" }),
+    jobApplicationId: uuid("job_application_id").references(() => jobApplications.id, { onDelete: "set null" }),
     amount: integer("amount").notNull(),
     interestRateBps: integer("interest_rate_bps").notNull(),
     termMonths: integer("term_months").notNull(),

@@ -1,0 +1,22 @@
+{
+  "fixture_groups": [
+    {
+      "name": "bet9ja_desktop_clean",
+      "provider_code": "bet9ja",
+      "upload_kind": "screenshot",
+      "files": [
+        "bet9ja_desktop_page_1.png"
+      ],
+      "expected_rows_file": "bet9ja_desktop_clean.expected.json"
+    },
+    {
+      "name": "1xbet_csv_exports",
+      "provider_code": "1xbet",
+      "upload_kind": "csv",
+      "files": [
+        "1xbet_history.csv"
+      ],
+      "expected_rows_file": "1xbet_csv_exports.expected.json"
+    }
+  ]
+}
